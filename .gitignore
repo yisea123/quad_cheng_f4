@@ -1,0 +1,16 @@
+Listings
+Objects
+DebugConfig
+doc
+STM32
+*.uvguix.Administrator
+*.uvoptx
+*.bin
+*.scvd
+*.htm
+*.TMP
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sct
+
