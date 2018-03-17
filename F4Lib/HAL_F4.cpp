@@ -90,10 +90,10 @@ void HAL_F4::Setup()
 	LEDB.mode_out();
 
 //=============================================================
-	console.begin(500000);
-	usart2.begin(115200);
-	usart3.begin(500000);
-	uart5.begin(500000);
+	console.begin(500000);		//调试
+	usart2.begin(115200);		//蓝牙?
+	usart3.begin(500000);		//
+	uart5.begin(500000);		//数传
 
 	//flash接口
  	spi1.set_baudrate_prescaler(SPIDriver::BaudRatePrescaler_8);//

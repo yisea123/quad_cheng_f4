@@ -1,24 +1,65 @@
 #include "RCIn.h"
 #include "QMath.h"
 
-int16_t RCIn::_pwm_to_range()
+
+// int16_t RCIn::_pwm_to_range()
+// {
+// 	int16_t r_in = constrain_int16(radio_in, _radio_min, _radio_max);	//遥控器输入限幅
+// 	
+// 	if (_reverse == -1){
+// 		r_in = _radio_max - (r_in - _radio_min);
+// 	}
+// 
+// 	int16_t radio_trim_low = _radio_min + _dead_zone;
+// 	if (r_in > radio_trim_low)
+// 		return (_control_min + ((long)(_control_max - _control_min) * (long)(r_in - radio_trim_low)) / (long)(_radio_max - radio_trim_low));
+// 	else if (_dead_zone > 0)
+// 		return 0;
+// 	else//dead_zone = 0,no dead_zone
+// 		return _control_min;
+// }
+// 
+// int16_t RCIn::_pwm_to_angle()
+// {
+// 	int16_t radio_trim_high = _radio_mid + _dead_zone;		//
+// 	int16_t radio_trim_low = _radio_mid - _dead_zone;		//
+// 	int16_t r_in;
+// 
+// 	// prevent div by 0
+// 	if ((radio_trim_low - _radio_min) == 0 || (_radio_max - radio_trim_high) == 0)
+// 		return 0;
+// 
+// 	r_in = constrain_int16(radio_in, _radio_min, _radio_max);
+// 
+// 	if (r_in > radio_trim_high) //大于中值
+// 	{
+// 		return _reverse * ((long)_control_max * (long)(r_in - radio_trim_high)) / (long)(_radio_max - radio_trim_high);
+// 	}
+// 	else if (r_in < radio_trim_low) //小于中值
+// 	{
+// 		return _reverse * ((long)_control_max * (long)(r_in - radio_trim_low)) / (long)(radio_trim_low - _radio_min);
+// 	}
+// 	else
+// 		return 0;
+// 
+// }
+
+float RCIn::_pwm_to_range()
 {
 	int16_t r_in = constrain_int16(radio_in, _radio_min, _radio_max);	//遥控器输入限幅
-	
-	if (_reverse == -1){
+	if (_reverse == -1) {
 		r_in = _radio_max - (r_in - _radio_min);
 	}
-
 	int16_t radio_trim_low = _radio_min + _dead_zone;
 	if (r_in > radio_trim_low)
-		return (_control_min + ((long)(_control_max - _control_min) * (long)(r_in - radio_trim_low)) / (long)(_radio_max - radio_trim_low));
+		return (float)(r_in - radio_trim_low) / (float)(_radio_max - radio_trim_low);
 	else if (_dead_zone > 0)
-		return 0;
+		return 0.0f;
 	else//dead_zone = 0,no dead_zone
-		return _control_min;
+		return 0.0f;
 }
 
-int16_t RCIn::_pwm_to_angle()
+float RCIn::_pwm_to_angle()
 {
 	int16_t radio_trim_high = _radio_mid + _dead_zone;		//
 	int16_t radio_trim_low = _radio_mid - _dead_zone;		//
@@ -32,15 +73,17 @@ int16_t RCIn::_pwm_to_angle()
 
 	if (r_in > radio_trim_high) //大于中值
 	{
-		return _reverse * ((long)_control_max * (long)(r_in - radio_trim_high)) / (long)(_radio_max - radio_trim_high);
+		return _reverse * ((float)(r_in - radio_trim_high)) / (float)(_radio_max - radio_trim_high);
 	}
 	else if (r_in < radio_trim_low) //小于中值
 	{
-		return _reverse * ((long)_control_max * (long)(r_in - radio_trim_low)) / (long)(radio_trim_low - _radio_min);
+		return _reverse * ((float)(r_in - radio_trim_low)) / (float)(radio_trim_low - _radio_min);
 	}
 	else
-		return 0;
+		return 0.0f;
+
 }
+
 
 void RCIn::save_config()
 {
@@ -53,15 +96,19 @@ void RCIn::save_config()
 
 void RCIn::set_radio(int16_t pwm)
 {
-// 	radio_in = pwm;
-// 	if (_type == RCIn::TYPE_RANGE)
-// 	{
-// 		control_in = _pwm_to_range();
-// 	}
-// 	else //TYPE_ANGLE
-// 	{
-// 		control_in =  _pwm_to_angle();
-// 	}
+	radio_in = pwm;
+	
+	if (_type == RCIn::TYPE_RANGE)
+	{
+//		control_in = _pwm_to_range();
+		output = _pwm_to_range();
+
+	}
+	else //TYPE_ANGLE
+	{
+//		control_in =  _pwm_to_angle();
+		output = _pwm_to_angle();
+	}
 
 }
 

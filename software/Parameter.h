@@ -12,7 +12,7 @@ const uint8_t  PARAMETER_MAGIC1 = 'P';
 const uint8_t  PARAMETER_MAGIC2 = 'A';
 const uint8_t  PARAMETER_MAGIC3 = 'M';
 const uint8_t PARAMETER_VER		= 20;
-const uint8_t PARAMETER_SUB_VER	= 13;
+const uint8_t PARAMETER_SUB_VER	= 14;
 
 //====================================
 

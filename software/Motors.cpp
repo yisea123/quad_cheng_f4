@@ -42,7 +42,8 @@ void Motors::add_motor(int8_t motor_num, float roll_factor_in_degrees, float pit
 }
 void Motors::remove_motor(int8_t motor_num)
 {
-	if (motor_num >= 0 && motor_num < MOTORS_MAX_MOTOR_NUM) {
+	if (motor_num >= 0 && motor_num < MOTORS_MAX_MOTOR_NUM) 
+	{
 		// disable the motor, set all factors to zero
 		motor_enabled[motor_num] = false;
 		_roll_factor[motor_num] = 0;

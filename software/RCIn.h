@@ -7,7 +7,8 @@ class RCIn
 {
 public:
 	RCIn() :
-		control_in(0),
+		//control_in(0),
+		output(0.0f),
 		//参数
 		_dead_zone(0),
 		_radio_min(1100),
@@ -40,34 +41,32 @@ public:
 		_type = t;
 	}
 	
-	void set_angle(int16_t angle){
-		_type = RCIn::TYPE_ANGLE;
-		_control_max = angle;
-	}
-	void set_range(int16_t min,int16_t max){
-		_type = RCIn::TYPE_RANGE;
-		_control_min = min;
-		_control_max = max;
-	}
+// 	void set_angle(int16_t angle){
+// 		_type = RCIn::TYPE_ANGLE;
+// 		_control_max = angle;
+// 	}
+// 	void set_range(int16_t min,int16_t max){
+// 		_type = RCIn::TYPE_RANGE;
+// 		_control_min = min;
+// 		_control_max = max;
+// 	}
 	
 	void set_radio(int16_t pwm);
 	float get_percent(void);	//获取当前输入的比例值
 
 	int16_t radio_in;		//接收输入值
-	int16_t control_in;	//输出值
-	//float output;
+	//int16_t control_in;	//输出值
+	float output;
 
 private:
-	int16_t _pwm_to_range();
-	int16_t _pwm_to_angle();
-
+	//int16_t _pwm_to_range();
+	//int16_t _pwm_to_angle();
+	float _pwm_to_range();
+	float _pwm_to_angle();
 
 
 	//转换输出参数
 	uint8_t _type;
-	int16_t _control_min;
-	int16_t _control_max;
-
 
 	//接收输入参数
 	int16_t _dead_zone;

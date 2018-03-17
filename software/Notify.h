@@ -20,7 +20,7 @@ public:
 		
 	}flags;
 
-
+	void extern_led_update(void);
 	void update(void);
 private:
 	uint8_t _count;

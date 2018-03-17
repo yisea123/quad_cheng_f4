@@ -23,7 +23,7 @@ void set_throttle_zero(int16_t throttle_control)
 {
 	static uint32_t last_nonzero_throttle_ms = 0;
 	uint32_t tnow_ms = millis();
-	if (throttle_control > 0)
+	if (throttle_control > 0.0f)
 	{
 		last_nonzero_throttle_ms = tnow_ms;
 		state.throttle_zero = false;

@@ -10,7 +10,6 @@
 #include "Motors.h"
 #include "Attitude.h"
 #include "AHRS_Q.h"
-#include "SPIFlash.h"
 
 #include "Ano_DT.h"
 #include "MiniBalance.h"
@@ -47,6 +46,10 @@ AttitudeControl attitude_control(ahrs, motors,
 //////////////////////////////////////////////////////////////////////////
 bool init_arm_motor()
 {
+	if (motors.armed()) {
+		return true;
+	}
+
 	ahrs.set_fast_gains(false);
 	ahrs.set_armed(true);
 	motors.set_mid_throttle(g.throttle_mid);
@@ -218,14 +221,14 @@ void arm_check_loop(void)
 #define  DISARM_DELAY	15			//2s
 
 	static int16_t arming_count = 0;
-	if (g.rcin_throttle.control_in > 0)//油门非0,退出
+	if (g.rcin_throttle.output > 0)//油门非0,退出
 	{
 		arming_count = 0;
 		return;
 	}
 
-	int16_t tmp = g.rcin_yaw.control_in;		//-4500 ~4500
-	if (tmp > 4000)		//解锁
+	float tmp = g.rcin_yaw.output;		//-4500 ~4500
+	if (tmp > 0.85f)		//解锁
 	{
 		if (arming_count < ARM_DELAY)
 			arming_count++;
@@ -247,7 +250,7 @@ void arm_check_loop(void)
 
 		}
 	}
-	else if (tmp < -4000)		//上锁
+	else if (tmp < -0.85f)		//上锁
 	{
 		if (arming_count < DISARM_DELAY)
 			arming_count++;
@@ -265,7 +268,7 @@ void arm_check_loop(void)
 	}
 }
 
-
+//////////////////////////////////////////////////////////////////////////
 //100Hz(10ms),读取遥控信号
 void rc_loop(void)
 {
@@ -289,7 +292,7 @@ void rc_loop(void)
 
 		last_update_ms = tnow_ms;
 		set_throttle_failsafe(g.rcin_throttle.radio_in);		//失控油门检测,sbus硬件支持
-		set_throttle_zero(g.rcin_throttle.control_in);			//0油门检测
+		set_throttle_zero(g.rcin_throttle.output);			//0油门检测
 		return;
 	}
 
@@ -324,6 +327,7 @@ void rc_loop(void)
 void notify_loop() {
 	notify.update();
 }
+//////////////////////////////////////////////////////////////////////////
 //1Hz(1000ms)
 void parameter_loop()
 {
@@ -353,6 +357,7 @@ void one_hz_loop(void)
 	parameter_loop();			//参数保存检查
 	pre_arm_check_loop();		
 }
+//////////////////////////////////////////////////////////////////////////
 //400Hz(2.5ms)
 void stabilize_run(float dt)
 {
@@ -361,7 +366,7 @@ void stabilize_run(float dt)
 	float pilot_throttle_scaled;
 
 	//未解锁或未启动
-	if (!motors.armed() || g.rcin_throttle.control_in <= 0)//未解锁,0油门
+	if (!motors.armed() || g.rcin_throttle.output <= 0.0f)//未解锁,0油门
 	{
 		attitude_control.relax_bf_rate_controller();			//期望角速率设置为当前速率
 		attitude_control.set_yaw_target_to_current_heading();	//期望航向设置为当前航向
@@ -371,13 +376,12 @@ void stabilize_run(float dt)
 
 	//无头模式下需要转换输出
 
-	//将rcin转为期望角度
-	get_pilot_desired_lean_angles(g.rcin_roll.control_in, g.rcin_pitch.control_in, target_roll, target_pitch);
-	//转为期望角速度
-	target_yaw_rate = get_pilot_desired_yaw_rate(g.rcin_yaw.control_in);	//*4.5
-	//转为期望油门
-	pilot_throttle_scaled = get_pilot_desired_throttle(g.rcin_throttle.control_in);
-	//pilot_throttle_scaled = g.rcin_throttle.control_in;
+	
+	target_roll = g.rcin_roll.output*g.angle_max;
+	target_pitch = g.rcin_pitch.output*g.angle_max;
+	target_yaw_rate = g.rcin_yaw.output * g.angle_max * g.acro_yaw_p;
+	pilot_throttle_scaled = get_pilot_desired_throttle(g.rcin_throttle.output*1000);
+	
 
 	//外环
 	attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(
@@ -395,7 +399,7 @@ void fast_loop(void)
 	stabilize_run(deltat);
 
 }
-
+//////////////////////////////////////////////////////////////////////////
 //1Hz(1ms),一次只发送一个包
 void ANO_DT_Data_Exchange(void)
 {
@@ -486,8 +490,10 @@ void ANO_DT_Data_Exchange(void)
 // 			ibus.channel.ch5, ibus.channel.ch6, ibus.channel.ch7, ibus.channel.ch8,
 //  			ibus.channel.ch9, ibus.channel.ch10);
 	
-		ANO_DT_Send_RCData(g.rcin_throttle.control_in+1000 , g.rcin_yaw.control_in / 10 + 1500, g.rcin_roll.control_in / 10 + 1500, g.rcin_pitch.control_in / 10 + 1500, 0, 0, 0, 0, 0, 0);
+		//ANO_DT_Send_RCData(g.rcin_throttle.control_in+1000 , g.rcin_yaw.control_in / 10 + 1500, g.rcin_roll.control_in / 10 + 1500, g.rcin_pitch.control_in / 10 + 1500, 0, 0, 0, 0, 0, 0);
 		
+		//ANO_DT_Send_RCData(g.rcin_throttle.output*1000, g.rcin_yaw.output * 1000 + 1000,g.rcin_roll.output * 1000+1000, g.rcin_pitch.output * 1000 + 1000,  0, 0, 0, 0, 0,0);
+
 		//ANO_DT_Send_RCData(g.rcin_throttle.radio_in, g.rcin_yaw.radio_in, g.rcin_roll.radio_in, g.rcin_pitch.radio_in, 0, 0, 0, 0, 0, 0);
 		//ANO_DT_Send_RCData(motors.motor_out[0], motors.motor_out[1], motors.motor_out[2], motors.motor_out[3], 0, 0, 0, 0, 0, 0);
 		//ANO_DT_Send_RCData(g.rcout_throttle.servo_out,g.rcout_yaw.servo_out,g.rcout_roll.servo_out,g.rcout_pitch.servo_out,0, 0, 0, 0, 0, 0);
@@ -672,7 +678,6 @@ void display_loop(void)
 
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 //Setup
 //////////////////////////////////////////////////////////////////////////
@@ -681,33 +686,39 @@ void init_rcin(void)
 	g.rcin_roll(SBUS_MIN, SBUS_MID, SBUS_MAX);
 	g.rcin_roll.set_dead_zone(30);
 	g.rcin_roll.set_reverse(1);
-	g.rcin_roll.set_angle(RC_RPY_INPUT_MAX);
+	g.rcin_roll.set_type(RCIn::TYPE_ANGLE);
 
 
 	g.rcin_pitch(SBUS_MIN, SBUS_MID, SBUS_MAX);
 	g.rcin_pitch.set_dead_zone(30);
 	g.rcin_pitch.set_reverse(1);
-	g.rcin_pitch.set_angle(RC_RPY_INPUT_MAX);
+	g.rcin_pitch.set_type(RCIn::TYPE_ANGLE);
+
 
 	g.rcin_yaw(SBUS_MIN, SBUS_MID, SBUS_MAX);
 	g.rcin_yaw.set_dead_zone(30);
 	g.rcin_yaw.set_reverse(1);
-	g.rcin_yaw.set_angle(RC_RPY_INPUT_MAX);
+	g.rcin_yaw.set_type(RCIn::TYPE_ANGLE);
+
 
 	g.rcin_throttle(SBUS_MIN, SBUS_MID, SBUS_MAX);
 	g.rcin_throttle.set_dead_zone(50);
 	g.rcin_throttle.set_reverse(1);
-	g.rcin_throttle.set_range(g.throttle_min, g.throttle_max);
+	g.rcin_throttle.set_type(RCIn::TYPE_RANGE);
+
 
 	g.rcin_ch7(SBUS_MIN, SBUS_MID, SBUS_MAX);
 	g.rcin_ch7.set_dead_zone(50);
 	g.rcin_ch7.set_reverse(1);
-	g.rcin_ch7.set_range(0, 1000);
+	g.rcin_ch7.set_type(RCIn::TYPE_ANGLE);
+
 
 	g.rcin_ch9(SBUS_MIN, SBUS_MID, SBUS_MAX);
 	g.rcin_ch9.set_dead_zone(50);
 	g.rcin_ch9.set_reverse(-1);
-	g.rcin_ch9.set_range(0,1000);
+	g.rcin_ch9.set_type(RCIn::TYPE_ANGLE);
+
+
 
 
 // 	g.rcin_roll(1000, 1500, 2000);
@@ -785,19 +796,17 @@ void esc_calibration(void)
 	uint16_t n;
 	int16_t pwm_val;
 
-
-
+	//
 	for (t = 0; t < 3; t++)
 	{
 		rc_loop();
 		delay_ms(100);
 	}
 
-	
 	while (1)
 	{
 		rc_loop();			//读取遥控参数
-		pwm_val = g.rcin_throttle.get_percent()*(g.rcout_throttle.radio_max - g.rcout_throttle.radio_min) + g.rcout_throttle.radio_min;
+		pwm_val = g.rcin_throttle.output*(g.rcout_throttle.radio_max - g.rcout_throttle.radio_min) + g.rcout_throttle.radio_min;
 
 		for (n=0;n<MOTORS_MAX_MOTOR_NUM;n++)
 		{
@@ -820,6 +829,7 @@ void setup(void)
 {
 	sbus_init();
 	ibus_init();
+
 	notify.init();
 	init_rcin();
 	init_rcout();
@@ -841,8 +851,6 @@ void setup(void)
 	state.initialised = true;
 }
 
-
-
 //////////////////////////////////////////////////////////////////////////
 //main
 //////////////////////////////////////////////////////////////////////////
@@ -855,7 +863,6 @@ const scheduler_tasks_t scheduler_tasks[] = {
 	{ display_loop,		1000,	100},	//1kHz
 	{ one_hz_loop,	1000000,	500},	//1s处理一次参数保存请求
 };
-
 int main(void)
 {
 	hal.Setup();

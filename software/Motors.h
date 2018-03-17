@@ -41,7 +41,8 @@ public:
 
 		_min_throttle(MOTORS_DEFAULT_MIN_THROTTLE),
 		_max_throttle(MOTORS_DEFAULT_MAX_THROTTLE),
-		_hover_out(MOTORS_DEFAULT_MID_THROTTLE)
+		_hover_out(MOTORS_DEFAULT_MID_THROTTLE),
+		_spin_when_armed(70)				//解锁时的转速
 		
 	{
 		_flags.armed = false;
@@ -49,7 +50,7 @@ public:
 
 		_flags.slow_start_slow_end = true;	//
 		_spin_when_armed_ramped = 0;		//计数器
-		_spin_when_armed = 50;				//解锁时的转速
+		
 
 		limit.roll_pitch = false;
 		limit.yaw = false;
