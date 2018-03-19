@@ -96,7 +96,6 @@ public:
 	void output();
 	//
 	void slow_start(void){ _flags.slow_start = true; }
-
 	void add_motor(int8_t motor_num, float angle_degree, float yaw_factor);
 	void add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_degrees, float yaw_factor);
 	void remove_motor(int8_t motor_num);

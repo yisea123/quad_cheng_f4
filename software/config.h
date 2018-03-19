@@ -116,6 +116,61 @@
 #endif
 
 
+
+//////////////////////////////////////////////////////////////////////////////
+// Throttle control gains
+//
+#ifndef THROTTLE_CRUISE
+# define THROTTLE_CRUISE       450             // default estimate of throttle required for vehicle to maintain a hover
+#endif
+
+#ifndef THR_MID_DEFAULT
+# define THR_MID_DEFAULT       500             // Throttle output (0 ~ 1000) when throttle stick is in mid position
+#endif
+
+#ifndef THR_MIN_DEFAULT
+# define THR_MIN_DEFAULT       130             // minimum throttle sent to the motors when armed and pilot throttle above zero
+#endif
+#ifndef THR_MAX_DEFAULT
+# define THR_MAX_DEFAULT       1000            // maximum throttle sent to the motors
+#endif
+
+#ifndef THR_DZ_DEFAULT
+# define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
+#endif
+
+#ifndef ALT_HOLD_P
+# define ALT_HOLD_P            1.0f
+#endif
+
+// RATE control
+#ifndef THROTTLE_RATE_P
+# define THROTTLE_RATE_P       5.0f
+#endif
+
+// Throttle Accel control
+#ifndef THROTTLE_ACCEL_P
+# define THROTTLE_ACCEL_P      0.50f
+#endif
+#ifndef THROTTLE_ACCEL_I
+# define THROTTLE_ACCEL_I      1.00f
+#endif
+#ifndef THROTTLE_ACCEL_D
+# define THROTTLE_ACCEL_D      0.0f
+#endif
+#ifndef THROTTLE_ACCEL_IMAX
+# define THROTTLE_ACCEL_IMAX   800
+#endif
+
+// default maximum vertical velocity and acceleration the pilot may request
+#ifndef PILOT_VELZ_MAX
+# define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#endif
+#ifndef PILOT_ACCEL_Z_DEFAULT
+# define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+#endif
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //////////////////////////////////////////////////////////////////////////////
@@ -147,6 +202,12 @@
 # define FS_THR_VALUE_DEFAULT       310		//SBUS,最小值350左右(+600=975)  
 #endif
 #endif
+
+#ifndef LAND_SPEED
+# define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
+#endif
+
+
 
 // Radio failsafe
 #ifndef FS_RADIO_TIMEOUT_MS						//无线信号丢失保护时间

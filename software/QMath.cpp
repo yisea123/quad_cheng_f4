@@ -34,6 +34,10 @@ int16_t constrain_int16(int16_t amt, int16_t min, int16_t max)
 {
 	return ((amt)<(min) ? (min) : ((amt)>(max) ? (max) : (amt)));
 }
+int32_t constrain_int32(int32_t amt, int32_t min, int32_t max)
+{
+	return ((amt) < (min) ? (min) : ((amt) > (max) ? (max) : (amt)));
+}
 float safe_sqrt(float v)
 {
 	float ret = sqrtf(v);

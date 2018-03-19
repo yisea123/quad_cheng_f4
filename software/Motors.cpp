@@ -76,7 +76,6 @@ void Motors::output_min()
 		}
 	}
 }
-
 void Motors::_output_armed(void)
 {
 	int8_t i;

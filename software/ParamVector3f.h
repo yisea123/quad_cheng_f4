@@ -32,8 +32,9 @@ public:
 
 
 private:
-	virtual uint8_t param_get(uint8_t *p);
-	virtual uint8_t param_set(uint8_t *p)const;
+	virtual uint8_t param_size()const;
+	virtual void param_get(uint8_t *p);
+	virtual void param_set(uint8_t *p)const;
 };
 
 

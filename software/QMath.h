@@ -44,6 +44,7 @@ float radians(float deg);
 float degrees(float rad);
 float constrain_float(float amt, float min, float max) ;
 int16_t constrain_int16(int16_t amt, int16_t min, int16_t max);
+int32_t constrain_int32(int32_t amt, int32_t min, int32_t max);
 
 float wrap_180_cd_float(float angle);
 int32_t wrap_360_cd(int32_t error);

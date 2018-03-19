@@ -99,7 +99,7 @@ void HAL_F4::Setup()
  	spi1.set_baudrate_prescaler(SPIDriver::BaudRatePrescaler_8);//
  	spi1.open();
 	//传感器接口
-	spi3.set_baudrate_prescaler(SPIDriver::BaudRatePrescaler_4);//
+	spi3.set_baudrate_prescaler(SPIDriver::BaudRatePrescaler_4);// 84/4=21
 	spi3.open();
 
  	spiflash.init();

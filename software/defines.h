@@ -34,5 +34,30 @@
 												ARMING_CHECK_VOLTAGE)
 
 
+//Flight Mode
+enum 
+{
+	// Auto Pilot modes
+	// ----------------
+	STABILIZE = 0,                     // hold level position
+	ALT_HOLD,                     // AUTO control
+	ACRO,								// rate control
+	POSHOLD,                  // position hold with manual override
+
+// 	AUTO,                         // AUTO control
+// 	GUIDED,                        // AUTO control
+// 	LOITER,                       // Hold a single location
+// 	RTL,                          // AUTO control
+// 	CIRCLE,                        // AUTO control
+// 	LAND,                        // AUTO control
+// 	OF_LOITER,                   // Hold a single location using optical flow sensor
+// 	DRIFT,                      // DRIFT mode (Note: 12 is no longer used)
+// 	SPORT,                       // earth frame rate control
+// 	FLIP,                 // flip the vehicle on the roll axis
+// 	AUTOTUNE,                 // autotune the vehicle's roll and pitch gains
+	NUM_MODES,
+
+};
+
 #endif
 

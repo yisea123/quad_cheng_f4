@@ -21,6 +21,7 @@ public:
 	{
 		TYPE_RANGE = 0,
 		TYPE_ANGLE,
+		TYPE_SWITCH,
 	};
 
 	void set_dead_zone(int16_t dz){
@@ -63,7 +64,7 @@ private:
 	//int16_t _pwm_to_angle();
 	float _pwm_to_range();
 	float _pwm_to_angle();
-
+	int8_t _pwm_to_switches();
 
 	//转换输出参数
 	uint8_t _type;

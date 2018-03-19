@@ -39,6 +39,9 @@ typedef struct
 
 extern dt_flag_t f;
 
+extern char Ano_StringBuffer[100];
+#define ANO_Printf(fmt, ...) 	do{uint8_t len = sprintf(Ano_StringBuffer,fmt, ##__VA_ARGS__);ANO_DT_SendString(Ano_StringBuffer,len);}while(0)
+
 
 void ANO_DT_Data_Receive_Anl_Task(void);
 void ANO_DT_Send_VER(void);

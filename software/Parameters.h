@@ -22,6 +22,15 @@ public:
 		p_angle_pitch(STABILIZE_PITCH_P),
 		p_angle_yaw(STABILIZE_YAW_P),
 
+		p_alt_pos(ALT_HOLD_P),
+		p_alt_rate(THROTTLE_RATE_P),
+		pid_alt_accel(THROTTLE_ACCEL_P,THROTTLE_ACCEL_I,THROTTLE_ACCEL_D,THROTTLE_ACCEL_IMAX),
+
+
+
+		land_speed(LAND_SPEED),
+		pilot_velocity_z_max(PILOT_VELZ_MAX),
+		pilot_accel_z(PILOT_ACCEL_Z_DEFAULT),
 		//
 		throttle_min(THR_MIN_DEFAULT),
 		throttle_max(THR_MAX_DEFAULT),
@@ -53,10 +62,10 @@ public:
 	RCIn rcin_pitch;
 	RCIn rcin_throttle;
 	RCIn rcin_yaw;
-// 	RCIn rcin_ch5;
-// 	RCIn rcin_ch6;
+ 	RCIn rcin_ch5;
+ 	RCIn rcin_ch6;
  	RCIn rcin_ch7;
-// 	RCIn rcin_ch8;
+ 	RCIn rcin_ch8;
 	RCIn rcin_ch9;
 
 	PID pid_rate_roll;
@@ -66,6 +75,20 @@ public:
 	PID p_angle_roll;
 	PID p_angle_pitch;
 	PID p_angle_yaw;
+
+	PID p_alt_pos;
+	PID p_alt_rate;
+	PID pid_alt_accel;
+
+	PID p_pos_xy;
+	PID pid_rate_x;
+	PID pid_rate_y;
+
+
+
+	Param_Int16 land_speed;
+	Param_Int16 pilot_velocity_z_max;	// maximum vertical velocity the pilot may request
+	Param_Int16 pilot_accel_z;			//  acceleration the pilot may request
 
 	//throtltle
 	Param_Int16 throttle_min;
@@ -87,6 +110,8 @@ public:
 	Param_Float acro_yaw_p;	//期望转为速率
 	Param_Int8 rc_feel_rp;
 	Param_Int16 angle_max;
+
+
 };
 
 

@@ -17,8 +17,8 @@ const uint8_t PARAMETER_SUB_VER	= 14;
 //====================================
 
 const uint32_t PARAM_FLASH_ADDR_BASE =	0;	//保存在内存中的地址
-const int PARAMETER_NUM_MAX = 100;			//最大参数数
-const int PARAMETER_BUFFER_SIZE = 512;		//交换内存大小
+const uint16_t PARAMETER_NUM_MAX = 200;			//最大参数数
+const uint32_t PARAMETER_BUFFER_SIZE = 512;		//交换内存大小
 
 
 /*************************************************************************/
@@ -28,7 +28,10 @@ public:
 	ParameterBase();
 	virtual ~ParameterBase() {}; 
 
-	static int Count();									//获取参数个数
+	static uint16_t Count();					//获取参数个数
+	static uint32_t Size();						//参数占用缓存大小
+
+
 	static ParameterBase* GetAddress(uint16_t index);	//获取参数地址
 	static void Setup();								//读取内存到所有参数
 	static void SaveAll();								//保存所有参数到内存
@@ -39,8 +42,9 @@ public:
 	//virtual uint8_t get_size() = 0;
 protected:
 	//子类需要实现这两个方法
-	virtual uint8_t param_get(uint8_t *p) = 0;
-	virtual uint8_t param_set(uint8_t *p)const = 0;
+	virtual uint8_t param_size()const = 0;
+	virtual void param_get(uint8_t *p) = 0;
+	virtual void param_set(uint8_t *p)const = 0;
 private:
 	static ParameterBase* ParametersAddress[PARAMETER_NUM_MAX];
 	static uint16_t ParametersNum;
@@ -66,22 +70,28 @@ public:
 	void set(const T& rhs) { _val = rhs; }
 
 private:
-	virtual uint8_t param_get(uint8_t *p);
-	virtual uint8_t param_set(uint8_t *p)const;
+	virtual uint8_t param_size()const;
+	virtual void param_get(uint8_t *p);
+	virtual void param_set(uint8_t *p)const;
 	T _val;
 };
-template <typename T>
-uint8_t ParameterBasic<T>::param_get(uint8_t *p)
+
+template<typename T>
+uint8_t ParameterBasic<T>::param_size() const
 {
-	
-	memcpy((uint8_t*)&_val,p,sizeof(T));
 	return sizeof(T);
 }
+
 template <typename T>
-uint8_t ParameterBasic<T>::param_set(uint8_t *p)const
+void ParameterBasic<T>::param_get(uint8_t *p)
+{
+	memcpy((uint8_t*)&_val,p,sizeof(T));
+}
+
+template <typename T>
+void ParameterBasic<T>::param_set(uint8_t *p)const
 {
 	memcpy(p,&_val,sizeof(T));
-	return sizeof(T);
 }
 
 

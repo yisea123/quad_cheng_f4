@@ -36,6 +36,8 @@ dt_flag_t f;			//需要发送数据的标志
 uint8_t data_to_send[50];											//发送数据缓存
 static uint8_t DT_RxBuffer[50], DT_data_cnt = 0, ano_dt_data_ok;	//接收数据缓存
 
+char Ano_StringBuffer[100];
+
 /////////////////////////////////////////////////////////////////////////////////////
 //Send_Data函数是协议中所有发送数据功能使用到的发送函数
 //移植时，用户应根据自身应用的情况，根据使用的通信方式，实现此函数
@@ -501,7 +503,7 @@ void ANO_DT_Send_Status(float angle_rol, float angle_pit, float angle_yaw, int32
 {
 	uint8_t _cnt=0;
 	int16_t _temp;
-	int32_t _temp2 = alt;
+	int32_t _temp2 = alt*100;
 	
 	data_to_send[_cnt++]=0xAA;
 	data_to_send[_cnt++]=0xAA;
@@ -518,6 +520,7 @@ void ANO_DT_Send_Status(float angle_rol, float angle_pit, float angle_yaw, int32
 	data_to_send[_cnt++]=BYTE1(_temp);
 	data_to_send[_cnt++]=BYTE0(_temp);
 	
+
 	data_to_send[_cnt++]=BYTE3(_temp2);
 	data_to_send[_cnt++]=BYTE2(_temp2);
 	data_to_send[_cnt++]=BYTE1(_temp2);

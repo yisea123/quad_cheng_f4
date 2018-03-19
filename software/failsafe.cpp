@@ -7,7 +7,6 @@ extern Parameters g;
 extern Motors motors;
 
 
-
 void failsafe_radio_on_event(void);		//关闭失控保护
 void failsafe_radio_off_event(void);	//开启失控保护
 void failsafe_set_radio(uint8_t b)		//失控保护

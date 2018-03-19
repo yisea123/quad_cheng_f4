@@ -81,7 +81,20 @@ float RCIn::_pwm_to_angle()
 	}
 	else
 		return 0.0f;
+}
 
+int8_t RCIn::_pwm_to_switches()
+{
+	int16_t r_in;
+	int8_t out;
+	r_in = constrain_int16(radio_in, _radio_min, _radio_max);
+	if (_reverse == -1) {
+		r_in = _radio_max - (r_in - _radio_min);
+	}
+
+	out = ((int32_t)10*(r_in - _radio_min)) / (int32_t)(_radio_max - _radio_min);
+
+	return out;
 }
 
 
@@ -104,11 +117,16 @@ void RCIn::set_radio(int16_t pwm)
 		output = _pwm_to_range();
 
 	}
-	else //TYPE_ANGLE
+	else if (_type == RCIn::TYPE_ANGLE) //TYPE_ANGLE
 	{
 //		control_in =  _pwm_to_angle();
 		output = _pwm_to_angle();
 	}
+	else//switch
+	{
+		output = _pwm_to_switches();
+	}
+
 
 }
 

@@ -5,11 +5,6 @@
 #include "HAL_F4.h"
 
 
-
-#define MiniBalance_Send(_buf,_len)		hal.usart2.putbuf(_buf,_len) //hal.console.putbuf(_buf,_len)
-
-
-
 enum 
 {
 	MB_DIR_TOP = 'A',

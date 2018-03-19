@@ -9,23 +9,24 @@ MiniBalanceFlag_T MiniBalance_Flag;
 static uint8_t param_ok;
 
 
+#define MB_Print(fmt,...) 	do{uint8_t len = sprintf((char*)minibalance_tx_buf,fmt,##__VA_ARGS__); \
+								hal.usart2.putbuf(minibalance_tx_buf,len);}while(0)		//串口发送数据
+
+
+
 void MiniBalance_Wave(int32_t a,int32_t b,int32_t c,int32_t d,int32_t e)
 {
-	int len = sprintf((char*)minibalance_tx_buf, "{B%d:%d:%d:%d:%d}$", a, b, c, d, e);
-	MiniBalance_Send(minibalance_tx_buf, len);
+	MB_Print("{B%d:%d:%d:%d:%d}$", a, b, c, d, e);
 }
-
 void MiniBalance_SendString(char *s)
 {
-	int len = sprintf((char*)minibalance_tx_buf,"{#%s}$", s);
-	MiniBalance_Send(minibalance_tx_buf, len);
+	MB_Print("{#%s}$", s);
 }
-
 void MiniBalance_SendParameter()
 {
 	uint32_t *value = MiniBalance_Flag.param;
-	int len = sprintf((char*)minibalance_tx_buf, "{C%d:%d:%d:%d:%d:%d:%d:%d:%d}$", value[0],value[1],value[2],value[3],value[4],value[5],value[6],value[7],value[8]);
- 	MiniBalance_Send(minibalance_tx_buf,len);
+
+	MB_Print("{C%d:%d:%d:%d:%d:%d:%d:%d:%d}$", value[0],value[1],value[2],value[3],value[4],value[5],value[6],value[7],value[8]);
 }
 
 

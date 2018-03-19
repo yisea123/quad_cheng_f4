@@ -2,14 +2,21 @@
 #include "HAL_F4.h"
 
 #include "QMath.h"
+
 #include "InertialSensor_ICM20602.h"
 #include "Compass_AK8975.h"
+#include "Barometer_SPL06.h"
+
+
+#include "Attitude.h"
 #include "Parameters.h"
+
 #include "Notify.h"
 #include "AttitudeControl.h"
+#include "PosControl.h"
 #include "Motors.h"
-#include "Attitude.h"
 #include "AHRS_Q.h"
+#include "InertialNav.h"
 
 #include "Ano_DT.h"
 #include "MiniBalance.h"
@@ -19,6 +26,7 @@
 
 #include "failsafe.h"
 #include "state.h"
+#include "flight_mode.h"
 
 #include "config.h"
 #include "defines.h"
@@ -30,9 +38,9 @@ state_t state;
 Parameters g;
 
 
-
 InertialSensor_ICM20602 ins(hal.spi3, GPIO(PA15));
 Compass_AK8975 compass(hal.spi3, GPIO(PB14));
+Barometer_SPL06 barometer(hal.spi3, GPIO(PB8));
 
 static Notify notify;
 AHRS_Q ahrs(ins, compass);
@@ -40,6 +48,18 @@ Motors motors(g.rcout_roll, g.rcout_pitch, g.rcout_throttle, g.rcout_yaw);
 AttitudeControl attitude_control(ahrs, motors,
 	g.p_angle_roll, g.p_angle_pitch, g.p_angle_yaw,
 	g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
+InertialNav inertial_nav(ahrs, barometer);
+
+PosControl pos_control(ahrs, motors, attitude_control,inertial_nav,
+	g.p_alt_pos, g.p_alt_rate, g.pid_alt_accel,
+	g.p_pos_xy, g.pid_rate_x, g.pid_rate_y);
+
+
+
+//气压计高度,速率,in cm
+float baro_alt, baro_climbrate;
+//float sonar_alt;
+
 
 //////////////////////////////////////////////////////////////////////////
 //loop
@@ -54,6 +74,8 @@ bool init_arm_motor()
 	ahrs.set_armed(true);
 	motors.set_mid_throttle(g.throttle_mid);
 	motors.arm();
+	inertial_nav.ignore_next_error();
+	barometer.update_calibration();
 	return true;
 }
 void init_disarm_motor()
@@ -70,7 +92,6 @@ void init_disarm_motor()
 	ahrs.set_armed(false);
 
 }
-//遥控器校准检查
 void pre_arm_rc_check()		//检查遥控器是否校准
 {
 	if(state.pre_arm_rc_check){
@@ -88,8 +109,7 @@ void pre_arm_rc_check()		//检查遥控器是否校准
 	set_pre_arm_rc_check(true);
 
 }
-//检测各传感器是否正常
-void pre_arm_check(bool display_failure)
+void pre_arm_check(bool display_failure)//检测各传感器是否正常
 {
 	if (motors.armed())return;		//已解锁
 	if (state.pre_arm_check) {
@@ -174,8 +194,7 @@ void pre_arm_check(bool display_failure)
 								 //
 	set_pre_arm_check(true);
 }
-//检测当前解锁状态
-bool arm_check(bool display_failure)
+bool arm_check(bool display_failure)//检测当前解锁状态
 {
 	if (motors.armed())return true;
 
@@ -211,7 +230,7 @@ bool arm_check(bool display_failure)
 
 	return true;
 }
-//10hz(100ms)
+//10hz(100ms):解锁检测
 void arm_check_loop(void)
 {
 //油门最小,方向最右->解锁
@@ -270,7 +289,7 @@ void arm_check_loop(void)
 
 //////////////////////////////////////////////////////////////////////////
 //100Hz(10ms),读取遥控信号
-void rc_loop(void)
+void read_radio(void)
 {
 	static uint32_t last_update_ms = 0;
 	uint32_t tnow_ms = millis();
@@ -283,7 +302,12 @@ void rc_loop(void)
 		g.rcin_throttle.set_radio(sbus.channel.ch3);
 		g.rcin_yaw.set_radio(sbus.channel.ch4);
 
+	
+		g.rcin_ch5.set_radio(sbus.channel.ch5);
+		g.rcin_ch6.set_radio(sbus.channel.ch6);
 		g.rcin_ch7.set_radio(sbus.channel.ch7);
+
+		g.rcin_ch8.set_radio(sbus.channel.ch8);
 		g.rcin_ch9.set_radio(sbus.channel.ch9);
 
 		sbus.state = SBUS_EMPTY;
@@ -293,6 +317,8 @@ void rc_loop(void)
 		last_update_ms = tnow_ms;
 		set_throttle_failsafe(g.rcin_throttle.radio_in);		//失控油门检测,sbus硬件支持
 		set_throttle_zero(g.rcin_throttle.output);			//0油门检测
+
+		failsafe_set_radio(false);
 		return;
 	}
 
@@ -323,20 +349,81 @@ void rc_loop(void)
 	}
 	
 }
-//10Hz,100ms
+uint8_t mode_map(uint8_t sp)
+{
+	if (sp < 3)
+	{
+		return STABILIZE;
+	}
+	else
+	{	
+		return ALT_HOLD;
+	
+	}
+}
+#define CONTROL_SWITCH_COUNTER  20  
+void read_control_switch(void)//切换飞行模式
+{
+	static int8_t old_switch = -1;
+	int8_t sp = g.rcin_ch5.output;
+	static uint8_t switch_counter = 0;
+
+
+	if(old_switch != sp && !failsafe.radio && failsafe.radio_counter == 0)	//切换模式
+	{
+		switch_counter++;
+		if(switch_counter >= CONTROL_SWITCH_COUNTER){
+			old_switch = sp;
+			switch_counter = 0;
+
+			//TODO:不一定成功??
+			set_mode(mode_map(sp),motors.armed());	
+
+		}
+
+	}
+
+}
+void rc_loop(void)
+{
+	read_radio();
+	read_control_switch();
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+//10Hz,100ms:指示更新
 void notify_loop() {
 	notify.update();
 }
+
 //////////////////////////////////////////////////////////////////////////
-//1Hz(1000ms)
+//100Hz,10ms:气压计读取更新
+void barometer_update(void)
+{
+	barometer.update();
+}
+
+//////////////////////////////////////////////////////////////////////////
+//10Hz,100ms:更新气压计,超声波高度
+void update_altitude(void)
+{
+	barometer.read();
+ 	baro_alt = barometer.get_altitude()*100.0f;
+ 	baro_climbrate = barometer.get_climb_rate()*100.0f;
+
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+//1Hz(1000ms):保存参数,预解锁检测
 void parameter_loop()
 {
 	//保存数据较消耗时间,解锁状态下不保存
-	if(ParameterBase::SaveRequeset() && !motors.armed())	
+	if (ParameterBase::SaveRequeset() && !motors.armed())
 	{
 		ParameterBase::SaveAll();
 	}
-
 }
 void pre_arm_check_loop()
 {
@@ -354,16 +441,16 @@ void pre_arm_check_loop()
 }
 void one_hz_loop(void)
 {
-	parameter_loop();			//参数保存检查
 	pre_arm_check_loop();		
 }
 //////////////////////////////////////////////////////////////////////////
-//400Hz(2.5ms)
+//400Hz(2.5ms):
 void stabilize_run(float dt)
 {
 	int16_t target_roll, target_pitch;
 	float target_yaw_rate;
 	float pilot_throttle_scaled;
+	int16_t throttle_control;
 
 	//未解锁或未启动
 	if (!motors.armed() || g.rcin_throttle.output <= 0.0f)//未解锁,0油门
@@ -380,7 +467,9 @@ void stabilize_run(float dt)
 	target_roll = g.rcin_roll.output*g.angle_max;
 	target_pitch = g.rcin_pitch.output*g.angle_max;
 	target_yaw_rate = g.rcin_yaw.output * g.angle_max * g.acro_yaw_p;
-	pilot_throttle_scaled = get_pilot_desired_throttle(g.rcin_throttle.output*1000);
+	throttle_control = g.rcin_throttle.output * 1000;
+
+	pilot_throttle_scaled = get_pilot_desired_throttle(throttle_control);
 	
 
 	//外环
@@ -390,13 +479,89 @@ void stabilize_run(float dt)
 	attitude_control.set_throttle_out(pilot_throttle_scaled, true);		//设置油门
 
 }
+ void althold_run(float dt)
+{
+	int16_t target_roll, target_pitch;
+	float target_yaw_rate;
+	int16_t target_climb_rate;
+	int16_t throttle_control;
+
+	//未解锁或未启动
+	if (!motors.armed() || g.rcin_throttle.output <= 0.0f)//未解锁,0油门
+	{
+		attitude_control.relax_bf_rate_controller();			//期望角速率设置为当前速率
+		attitude_control.set_yaw_target_to_current_heading();	//期望航向设置为当前航向
+		attitude_control.set_throttle_out(0, false);		//设置油门输出为0
+		pos_control.set_alt_target_to_current_alt();	//期望高度设置为当前高度
+		return;
+	}
+
+	//无头模式下需要转换输出
+
+	target_roll = g.rcin_roll.output*g.angle_max;
+	target_pitch = g.rcin_pitch.output*g.angle_max;
+	target_yaw_rate = g.rcin_yaw.output * g.angle_max * g.acro_yaw_p;
+	throttle_control = g.rcin_throttle.output * 1000;
+
+	target_climb_rate = get_pilot_desired_climb_rate(throttle_control);
+
+
+	if (state.land_complete && target_climb_rate > 0)		//准备起飞
+	{
+		set_land_complete(false);
+		set_throttle_takeoff();	//slow_start,poscontrol.init_take_off
+	}
+
+
+	if(state.land_complete)	//在地上
+	{
+		attitude_control.relax_bf_rate_controller();			//期望角速率设置为当前速率
+		attitude_control.set_yaw_target_to_current_heading();	//期望航向设置为当前航向
+		attitude_control.set_throttle_out(get_throttle_pre_takeoff(throttle_control), false);//不到中位油门时输出根据油门变换,但不起飞
+		pos_control.set_alt_target_to_current_alt();			//期望高度设置为当前高度
+	}
+	else
+	{
+		//外环
+		attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(
+			target_roll, target_pitch, target_yaw_rate, dt, get_smoothing_gain());
+
+		pos_control.set_alt_target_from_climb_rate(target_climb_rate, dt);
+		pos_control.update_z_controller(dt);
+	}
+//	attitude_control.set_throttle_out(pilot_throttle_scaled, true);		//设置油门
+}
+void acro_run(float dt)
+{
+	stabilize_run(dt);
+}
+void update_flight_mode(float dt)
+{
+	switch (control_mode)
+	{
+	case STABILIZE:
+		stabilize_run(dt);
+		break;
+	case ACRO:
+		acro_run(dt);
+		break;
+	case  ALT_HOLD:
+		althold_run(dt);
+		break;
+
+	default:
+		break;
+	}
+
+}
 void fast_loop(void)
 {
 	float deltat = 2.5f / 1000.0f;
 	ahrs.update(deltat);		//更新欧拉角
 	attitude_control.rate_control_run(deltat);
 	motors.output();			//output
-	stabilize_run(deltat);
+	inertial_nav.update(deltat);
+	update_flight_mode(deltat);
 
 }
 //////////////////////////////////////////////////////////////////////////
@@ -405,7 +570,7 @@ void ANO_DT_Data_Exchange(void)
 {
 	static uint8_t cnt = 0;
 	static uint8_t senser_cnt = 10;	//
-// 	static uint8_t senser2_cnt = 50;	//
+ 	static uint8_t senser2_cnt = 50;	//
 // 	static uint8_t user_cnt = 10;	//
 	static uint8_t status_cnt = 15;	//
  	static uint8_t rcdata_cnt = 20;	//
@@ -417,8 +582,8 @@ void ANO_DT_Data_Exchange(void)
 
 	if ((cnt % senser_cnt) == (senser_cnt - 1))	
 		f.send_senser = 1;
-	// 	if((cnt % senser2_cnt) == (senser2_cnt-1))	//
-	// 		f.send_senser2 = 1;	
+ 	if((cnt % senser2_cnt) == (senser2_cnt-1))	//
+ 		f.send_senser2 = 1;	
 	// 	if((cnt % user_cnt) == (user_cnt-2))		//
 	// 		f.send_user = 1;
 	if ((cnt % status_cnt) == (status_cnt - 1))
@@ -460,12 +625,18 @@ void ANO_DT_Data_Exchange(void)
 	else if (f.send_status)
 	{
 		f.send_status = 0;
-		ANO_DT_Send_Status(degrees(ahrs.roll), degrees(ahrs.pitch), degrees(ahrs.yaw), 0, 0, 0);
+		uint8_t ano_mode;
+
+		if (control_mode == STABILIZE)ano_mode = 1;
+		else if (control_mode == ALT_HOLD)ano_mode = 2;
+		else ano_mode = 0;
+
+		ANO_DT_Send_Status(degrees(ahrs.roll), degrees(ahrs.pitch), degrees(ahrs.yaw),inertial_nav.get_altitude(), ano_mode, motors.armed());
 	}
 	else if (f.send_speed)
 	{
 		f.send_speed = 0;
-		//ANO_DT_Send_Speed(loc_ctrl_1.fb[Y],loc_ctrl_1.fb[X],loc_ctrl_1.fb[Z]);
+		//ANO_DT_Send_Speed(0,0,);//y,x,z
 	}
 	else if (f.send_user)
 	{
@@ -480,23 +651,25 @@ void ANO_DT_Data_Exchange(void)
 	else if (f.send_senser2)
 	{
 		f.send_senser2 = 0;
-		//ANO_DT_Send_Senser2(baro_height,ref_tof_height);//原始数据
+		ANO_DT_Send_Senser2(baro_alt*100,baro_climbrate*100);//原始数据
 	}
 	else if (f.send_rcdata)
 	{
 		f.send_rcdata = 0;
 
 // 		ANO_DT_Send_RCData(ibus.channel.ch3, ibus.channel.ch4, ibus.channel.ch1, ibus.channel.ch2,
-// 			ibus.channel.ch5, ibus.channel.ch6, ibus.channel.ch7, ibus.channel.ch8,
-//  			ibus.channel.ch9, ibus.channel.ch10);
-	
-		//ANO_DT_Send_RCData(g.rcin_throttle.control_in+1000 , g.rcin_yaw.control_in / 10 + 1500, g.rcin_roll.control_in / 10 + 1500, g.rcin_pitch.control_in / 10 + 1500, 0, 0, 0, 0, 0, 0);
+// 			ibus.channel.ch5, ibus.channel.ch6, ibus.channel.ch7, ibus.channel.ch8,ibus.channel.ch9, ibus.channel.ch10);
 		
-		//ANO_DT_Send_RCData(g.rcin_throttle.output*1000, g.rcin_yaw.output * 1000 + 1000,g.rcin_roll.output * 1000+1000, g.rcin_pitch.output * 1000 + 1000,  0, 0, 0, 0, 0,0);
+// 		ANO_DT_Send_RCData(g.rcin_throttle.output*1000+1000, g.rcin_yaw.output * 500 + 1500,g.rcin_roll.output * 500 + 1500, g.rcin_pitch.output * 500 + 1500,
+// 			g.rcin_ch5.output * 1000+1000, g.rcin_ch6.output * 1000+1000, g.rcin_ch7.output * 1000 +1000, 
+// 			g.rcin_ch8.output * 500 + 1500, g.rcin_ch9.output * 500 + 1500,0);
 
-		//ANO_DT_Send_RCData(g.rcin_throttle.radio_in, g.rcin_yaw.radio_in, g.rcin_roll.radio_in, g.rcin_pitch.radio_in, 0, 0, 0, 0, 0, 0);
+		ANO_DT_Send_RCData(g.rcin_throttle.output * 1000 + 1000, g.rcin_yaw.output * 500 + 1500, g.rcin_roll.output * 500 + 1500, g.rcin_pitch.output * 500 + 1500,
+			g.rcin_ch5.output + 1000, g.rcin_ch6.output + 1000, g.rcin_ch7.output + 1000,
+			g.rcin_ch8.output * 500 + 1500, g.rcin_ch9.output * 500 + 1500, 0);
+
+
 		//ANO_DT_Send_RCData(motors.motor_out[0], motors.motor_out[1], motors.motor_out[2], motors.motor_out[3], 0, 0, 0, 0, 0, 0);
-		//ANO_DT_Send_RCData(g.rcout_throttle.servo_out,g.rcout_yaw.servo_out,g.rcout_roll.servo_out,g.rcout_pitch.servo_out,0, 0, 0, 0, 0, 0);
 
 	}
 	else if (f.send_motopwm)
@@ -706,12 +879,28 @@ void init_rcin(void)
 	g.rcin_throttle.set_reverse(1);
 	g.rcin_throttle.set_type(RCIn::TYPE_RANGE);
 
+//////////////////////////////////////////////////////////////////////////
+	g.rcin_ch5(SBUS_MIN, SBUS_MID, SBUS_MAX);
+	g.rcin_ch5.set_dead_zone(0);
+	g.rcin_ch5.set_reverse(1);
+	g.rcin_ch5.set_type(RCIn::TYPE_SWITCH);
+
+	g.rcin_ch6(SBUS_MIN, SBUS_MID, SBUS_MAX);
+	g.rcin_ch6.set_dead_zone(0);
+	g.rcin_ch6.set_reverse(1);
+	g.rcin_ch6.set_type(RCIn::TYPE_SWITCH);
 
 	g.rcin_ch7(SBUS_MIN, SBUS_MID, SBUS_MAX);
-	g.rcin_ch7.set_dead_zone(50);
+	g.rcin_ch7.set_dead_zone(0);
 	g.rcin_ch7.set_reverse(1);
-	g.rcin_ch7.set_type(RCIn::TYPE_ANGLE);
+	g.rcin_ch7.set_type(RCIn::TYPE_SWITCH);
 
+	//////////////////////////////////////////////////////////////////////////
+
+	g.rcin_ch8(SBUS_MIN, SBUS_MID, SBUS_MAX);
+	g.rcin_ch8.set_dead_zone(50);
+	g.rcin_ch8.set_reverse(1);
+	g.rcin_ch8.set_type(RCIn::TYPE_ANGLE);
 
 	g.rcin_ch9(SBUS_MIN, SBUS_MID, SBUS_MAX);
 	g.rcin_ch9.set_dead_zone(50);
@@ -779,9 +968,14 @@ void init_motors()
 	motors.add_motor(MOTORS_MOT_3, -45, MOTORS_YAW_FACTOR_CW);	//左上
 	motors.add_motor(MOTORS_MOT_4, 135, MOTORS_YAW_FACTOR_CW);	//右下
 }
-void init_barometer(void)
+void init_barometer(bool full_calibration)
 {
-
+	if(full_calibration){
+		barometer.calibrate();
+	}
+	else{
+		barometer.update_calibration();
+	}
 }
 void startup_ground(void)
 {
@@ -789,23 +983,22 @@ void startup_ground(void)
 	ahrs.reset_gyro_drift();			//清除陀螺仪积分漂移
 	ahrs.set_fast_gains(true);			//快速矫正,P*8,解锁后取消
 }
-
+//校准电调,死循环,需要重新上电
 void esc_calibration(void)
 {
 	uint16_t t;
 	uint16_t n;
 	int16_t pwm_val;
 
-	//
 	for (t = 0; t < 3; t++)
 	{
-		rc_loop();
+		read_radio();
 		delay_ms(100);
 	}
 
 	while (1)
 	{
-		rc_loop();			//读取遥控参数
+		read_radio();			//读取遥控参数
 		pwm_val = g.rcin_throttle.output*(g.rcout_throttle.radio_max - g.rcout_throttle.radio_min) + g.rcout_throttle.radio_min;
 
 		for (n=0;n<MOTORS_MAX_MOTOR_NUM;n++)
@@ -843,8 +1036,17 @@ void setup(void)
 		esc_calibration();	//电调校准
 	}
 
-	init_barometer();
 	ins.init();
+
+
+//	attitude_control.set_dt(2.5 / 1000);
+	pos_control.set_dt(2.5f / 1000);
+
+
+	barometer.init();
+	init_barometer(true); //地面气压温度校准
+	inertial_nav.init();
+
 	startup_ground();
 	pre_arm_check(true);
 
@@ -858,11 +1060,14 @@ const scheduler_tasks_t scheduler_tasks[] = {
  	{ fast_loop,		2500,	1000 },	//400Hz,2.5ms,姿态解算,控制
 	{ rc_loop,			10000,	1000 },	//100Hz,10ms,接收机输入检测
  	{ arm_check_loop,	100000,	1000 },	//10Hz,100ms,遥控解锁手势检测
+	{ barometer_update,	10000,	1000 }, //100Hz,10ms,气压计读取更新
+	{ update_altitude,	100000,	1000 },	//10Hz,100ms,读取气压计,超声波,更新当前高度
 // 	{ throttle_loop,	20000,	1000 },	//50Hz,20ms,
  	{ notify_loop,		100000,	100 },//50Hz,20ms
 	{ display_loop,		1000,	100},	//1kHz
 	{ one_hz_loop,	1000000,	500},	//1s处理一次参数保存请求
 };
+
 int main(void)
 {
 	hal.Setup();
