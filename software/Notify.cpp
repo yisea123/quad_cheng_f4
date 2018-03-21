@@ -1,8 +1,12 @@
 #include "Notify.h"
 #include "HAL_F4.h"
 
+#include "flight_mode.h"
+#include "defines.h"
+
 
 struct Notify::notify_flags Notify::flags;
+
 
 void Notify::init(void)
 {
@@ -16,6 +20,7 @@ void Notify::init(void)
 void Notify::extern_led_update(void)
 {
 	static int8_t arm_counter = 0;
+	
 	//IMU校准，保持静止
 	if (Notify::flags.initialising)
 	{
@@ -33,12 +38,13 @@ void Notify::extern_led_update(void)
 
 	}
 
+	hal.LEDG = 0;
 	hal.LEDB = 0;
-	hal.LEDR = 0;
 
 	if (Notify::flags.armed)	//已解锁
 	{
-		hal.LEDG = 1;
+		if (control_mode == STABILIZE)	hal.LEDG = 1;		//姿态模式亮绿灯
+		else							hal.LEDB = 1;		//其他模式亮蓝灯	
 	}
 	else//未解锁,显示是否可以解锁
 	{
@@ -51,12 +57,18 @@ void Notify::extern_led_update(void)
 			case 0:
 			case 1:
 			case 2:
-				hal.LEDG = 1;
+
+				if (control_mode == STABILIZE)	hal.LEDG = 1;		//姿态模式亮绿灯
+				else							hal.LEDB = 1;		//其他模式亮蓝灯	
+
 				break;
 			case 3:
 			case 4:
 			case 5:
-				hal.LEDG = 0;
+
+				if (control_mode == STABILIZE)	hal.LEDG = 0;		//姿态模式亮绿灯
+				else							hal.LEDB = 0;		//其他模式亮蓝灯	
+
 				break;
 			default:
 				arm_counter = -1;

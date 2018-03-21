@@ -2,8 +2,12 @@
 
 #include "sbus.h"
 #include "ibus.h"
+
 #include "Ano_DT.h"
 #include "MiniBalance.h"
+#include "Ano_OF.h"
+
+
 
 extern "C" void UART4_IRQHandler(void)
 {
@@ -33,7 +37,13 @@ extern "C" void UART5_IRQHandler(void)
 
 }
 
-
+extern "C" void USART3_IRQHandler(void)
+{
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)
+	{
+		AnoOF_GetOneByte(USART3->DR);
+	}
+}
 
 extern "C" void USART2_IRQHandler(void)
 {

@@ -20,6 +20,7 @@
 
 #include "Ano_DT.h"
 #include "MiniBalance.h"
+#include "Ano_OF.h"
 
 #include "sbus.h"
 #include "ibus.h"
@@ -48,7 +49,7 @@ Motors motors(g.rcout_roll, g.rcout_pitch, g.rcout_throttle, g.rcout_yaw);
 AttitudeControl attitude_control(ahrs, motors,
 	g.p_angle_roll, g.p_angle_pitch, g.p_angle_yaw,
 	g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw);
-InertialNav inertial_nav(ahrs, barometer);
+InertialNav inertial_nav(ahrs);
 
 PosControl pos_control(ahrs, motors, attitude_control,inertial_nav,
 	g.p_alt_pos, g.p_alt_rate, g.pid_alt_accel,
@@ -59,7 +60,7 @@ PosControl pos_control(ahrs, motors, attitude_control,inertial_nav,
 //气压计高度,速率,in cm
 float baro_alt, baro_climbrate;
 //float sonar_alt;
-
+int16_t target_climb_rate;
 
 //////////////////////////////////////////////////////////////////////////
 //loop
@@ -452,7 +453,6 @@ void stabilize_run(float dt)
 {
 	int16_t target_roll, target_pitch;
 	float target_yaw_rate;
-	int16_t target_climb_rate;
 	int16_t throttle_control;
 
 	//未解锁或未启动
@@ -472,30 +472,30 @@ void stabilize_run(float dt)
 	target_yaw_rate = g.rcin_yaw.output * g.angle_max * g.acro_yaw_p;
 	throttle_control = g.rcin_throttle.output * 1000;
 
-	target_climb_rate = get_pilot_desired_climb_rate(throttle_control);
+	target_climb_rate = get_pilot_desired_climb_rate(throttle_control);	//获取期望垂直速率
 
 
-	if (state.land_complete && target_climb_rate > 0)		//准备起飞
+	if (state.land_complete && target_climb_rate > 0)		//准备起飞 
 	{
 		set_land_complete(false);
-		set_throttle_takeoff();	//slow_start,poscontrol.init_take_off
+		set_throttle_takeoff();								//slow_start,poscontrol.init_take_off
 	}
 
-
-	if(state.land_complete)	//在地上
+	if(state.land_complete)	//在地上,摇杆未超过中位
 	{
 		attitude_control.relax_bf_rate_controller();			//期望角速率设置为当前速率
 		attitude_control.set_yaw_target_to_current_heading();	//期望航向设置为当前航向
-		attitude_control.set_throttle_out(get_throttle_pre_takeoff(throttle_control), false);//不到中位油门时输出根据油门变换,但不起飞
 		pos_control.set_alt_target_to_current_alt();			//期望高度设置为当前高度
+		attitude_control.set_throttle_out(get_throttle_pre_takeoff(throttle_control), false);//不到中位油门时输出根据油门变换,但不起飞
+
 	}
 	else
 	{
-		//外环
-		attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(
-			target_roll, target_pitch, target_yaw_rate, dt, get_smoothing_gain());
-
-		pos_control.set_alt_target_from_climb_rate(target_climb_rate, dt);
+		
+		attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate,		//外环
+															dt, get_smoothing_gain());
+		
+		pos_control.set_alt_target_from_climb_rate(target_climb_rate, dt);										//更新期望高度
 		pos_control.update_z_controller(dt);
 	}
 //	attitude_control.set_throttle_out(pilot_throttle_scaled, true);		//设置油门
@@ -805,7 +805,7 @@ void MiniBalance_Data_Exchange()
 	else if(MiniBalance_Flag.send_wave)
 	{
 		MiniBalance_Flag.send_wave = 0;
-		MiniBalance_Wave(ahrs.roll_sensor, ahrs.pitch_sensor, ahrs.yaw_sensor, 0, 0);
+		MiniBalance_Wave(target_climb_rate,inertial_nav.get_velocity_z(),baro_alt,inertial_nav.get_position().z, ANO_OF.ALT2);
 	}
 
 //////////////////////////////////////////////////////////////////////////
@@ -814,8 +814,8 @@ void MiniBalance_Data_Exchange()
 }
 void display_loop(void)
 {
-	ANO_DT_Data_Exchange();
-//	MiniBalance_Data_Exchange();
+//	ANO_DT_Data_Exchange();
+	MiniBalance_Data_Exchange();
 //	printf("in=%d,percent=%.2f\r\n", g.rcin_ch9.radio_in, g.rcin_ch9.get_percent() * 100);
 
 }
@@ -1037,7 +1037,7 @@ void setup(void)
 
 	attitude_control.set_dt(2.5f / 1000);
 	pos_control.set_dt(2.5f / 1000);
-
+	pos_control.set_alt_max(180);		//最大高度2m
 
 	barometer.init();
 	init_barometer(true); //地面气压温度校准

@@ -19,7 +19,7 @@ PosControl::PosControl(const AHRS& ahrs, const Motors& motors,
 	_pid_rate_x(pid_rate_x),
 	_pid_rate_y(pid_rate_y),
 
-	_throttle_hover(POSCONTROL_THROTTLE_HOVER),
+	_throttle_hover(POSCONTROL_THROTTLE_HOVER),		//悬停油门
 
 	_last_update_xy_ms(0),
 	_last_update_z_ms(0),
@@ -28,9 +28,11 @@ PosControl::PosControl(const AHRS& ahrs, const Motors& motors,
 	_speed_down_cms(POSCONTROL_SPEED_DOWN),	//最大下降速度,-150
 	_speed_up_cms(POSCONTROL_SPEED_UP),		//最大上升速度,250
 	_speed_cms(POSCONTROL_SPEED),			//最大水平速度
+
 	_accel_z_cms(POSCONTROL_ACCEL_Z),		//最大垂直加速度
 	_accel_cms(POSCONTROL_ACCEL_XY),		//最大水平加速度
-	_leash(POSCONTROL_LEASH_LENGTH_MIN),	//水平最大误差
+
+	_leash(POSCONTROL_LEASH_LENGTH_MIN),		//水平最大误差
 	_leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),	//下降位置最大误差
 	_leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),	//上升位置最大误差
 
@@ -44,21 +46,25 @@ PosControl::PosControl(const AHRS& ahrs, const Motors& motors,
 {
 
 	_flags.force_recalc_xy = false;
-
-	_flags.recalc_leash_xy = true;
-	_flags.recalc_leash_z = true;
-
 	_flags.keep_xy_I_terms = false;
-	_flags.reset_desired_vel_to_pos = true;
-	_flags.reset_rate_to_accel_xy = true;
-	_flags.reset_rate_to_accel_z = true;
-	_flags.reset_accel_to_throttle = true;
+
+	//重新计算最大位置误差
+	_flags.recalc_leash_xy = true;
+	_flags.recalc_leash_z = true;		
+
+
+
+	//全部复位
+	_flags.reset_desired_vel_to_pos = true;		//清除位置误差？？复位误差滤波器
+	_flags.reset_rate_to_accel_xy = true;		//清除x,y速度误差
+	_flags.reset_rate_to_accel_z = true;		//清除z速度误差
+	_flags.reset_accel_to_throttle = true;		//清除加速度误差
 
 
 
 }
 	
-/// set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
+// set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
 void PosControl::set_dt(float delta_sec)
 {
 	_dt = delta_sec;
@@ -90,7 +96,8 @@ void PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, 
 	// adjust desired alt if motors have not hit their limits
 	// To-Do: add check of _limit.pos_down?
 	//根据油门状态确定是否继续积分
-	if ((climb_rate_cms < 0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms > 0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
+	if ((climb_rate_cms < 0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms > 0 && !_motors.limit.throttle_upper && !_limit.pos_up)) 
+	{
 		_pos_target.z += climb_rate_cms * dt;
 	}
 
@@ -118,7 +125,7 @@ void PosControl::update_z_controller(float dt)
 //	_last_update_z_ms = now;
 
 	// check if leash lengths need to be recalculated
-	calc_leash_length_z();		//更新_leash_up_z,_leash_down_z
+	calc_leash_length_z();		//更新_leash_up_z,_leash_down_z，最大位置误差，1m以上
 
 	// call position controller
 	pos_to_rate_z(dt);
@@ -177,15 +184,15 @@ float PosControl::calc_leash_length(float speed_cms, float accel_cms, float kP) 
 // vel_up_max, vel_down_max should have already been set before calling this method
 void PosControl::pos_to_rate_z(float dt)
 {
-	float curr_alt = _inav.get_altitude();		//当前高度
+	float curr_alt = _inav.get_altitude();		//当前高度，cm
 	// half the distance we swap between linear and sqrt and the distance we offset sqrt.
 	float linear_distance;  
-							// clear position limit flags
+	// clear position limit flags
 	_limit.pos_up = false;
 	_limit.pos_down = false;
 
-	// calculate altitude error
-	_pos_error.z = _pos_target.z - curr_alt;		//高度误差
+	//高度误差
+	_pos_error.z = _pos_target.z - curr_alt;		
 
 	// do not let target altitude get too far from current altitude
 	if (_pos_error.z > _leash_up_z)			//大于最大误差
@@ -194,12 +201,12 @@ void PosControl::pos_to_rate_z(float dt)
 		_pos_error.z = _leash_up_z;
 		_limit.pos_up = true;
 	}
-	if (_pos_error.z < -_leash_down_z) {
+	if (_pos_error.z < -_leash_down_z) 
+	{
 		_pos_target.z = curr_alt - _leash_down_z;
 		_pos_error.z = -_leash_down_z;
 		_limit.pos_down = true;
 	}
-
 
 
 	// check kP to avoid division by zero
@@ -208,14 +215,17 @@ void PosControl::pos_to_rate_z(float dt)
 	{
 		linear_distance = _accel_z_cms / (2.0f*_p_alt_pos.kP()*_p_alt_pos.kP());
 
-		if (_pos_error.z > 2 * linear_distance) {
+		if (_pos_error.z > 2 * linear_distance)		//误差太大，非线性化
+		{
 			_vel_target.z = safe_sqrt(2.0f*_accel_z_cms*(_pos_error.z - linear_distance));
 		}
-		else if (_pos_error.z < -2.0f*linear_distance) {
+		else if (_pos_error.z < -2.0f*linear_distance) 
+		{
 			_vel_target.z = -safe_sqrt(2.0f*_accel_z_cms*(-_pos_error.z - linear_distance));
 		}
-		else {
-			_vel_target.z = _p_alt_pos.get_p(_pos_error.z);
+		else 
+		{
+			_vel_target.z = _p_alt_pos.get_p(_pos_error.z);	//直接比例项
 		}
 	}
 	else 
@@ -231,12 +241,12 @@ void PosControl::pos_to_rate_z(float dt)
 // calculates desired acceleration and calls accel throttle controller
 void PosControl::rate_to_accel_z(float dt)
 {
-	const Vector3f& curr_vel = _inav.get_velocity();
+	const Vector3f& curr_vel = _inav.get_velocity();		//当前速度
 	float p;                                // used to capture pid values for logging
 	float desired_accel;                    // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
-											// check speed limits
-											// To-Do: check these speed limits here or in the pos->rate controller
+	// check speed limits
+	// To-Do: check these speed limits here or in the pos->rate controller
 	_limit.vel_up = false;
 	_limit.vel_down = false;
 
@@ -262,11 +272,11 @@ void PosControl::rate_to_accel_z(float dt)
 	// feed forward desired acceleration calculation
 	if (dt > 0.0f) 
 	{
-		if (!_flags.freeze_ff_z) 
+		if (!_flags.freeze_ff_z)			//加速度前馈
 		{
 			_accel_feedforward.z = (_vel_target.z - _vel_last.z) / dt;
 		}
-		else 
+		else //忽略前馈
 		{
 			// stop the feed forward being calculated during a known discontinuity
 			_flags.freeze_ff_z = false;
@@ -281,11 +291,12 @@ void PosControl::rate_to_accel_z(float dt)
 	_vel_last.z = _vel_target.z;
 
 	// reset velocity error and filter if this controller has just been engaged
-	if (_flags.reset_rate_to_accel_z) 
+	if (_flags.reset_rate_to_accel_z) //复位速度误差
 	{
 		// Reset Filter
-		_vel_error.z = 0;
-		_vel_error_filter.reset(0);
+		_vel_error.z = 0;					//速度误差清0
+		_vel_error_filter.reset(0);			//速度误差滤波器复位
+
 		desired_accel = 0;
 		_flags.reset_rate_to_accel_z = false;
 	}
@@ -310,40 +321,43 @@ void PosControl::rate_to_accel_z(float dt)
 // calculates a desired throttle which is sent directly to the motors
 void PosControl::accel_to_throttle(float accel_target_z,float dt)
 {
-	float z_accel_meas;         // actual acceleration
+	float z_accel_meas;				// actual acceleration
 	int32_t p, i, d;              // used to capture pid values for logging
 
 								  // Calculate Earth Frame Z acceleration
 	//当前加速度
-	z_accel_meas = -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f;
+	z_accel_meas = -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f;	//正方向向上，单位cm/s2
 
 	// reset target altitude if this controller has just been engaged
 	if (_flags.reset_accel_to_throttle) 
 	{
 		// Reset Filter
-		_accel_error.z = 0;
-		_accel_error_filter.reset(0);
+		_accel_error.z = 0;					//误差清0
+		_accel_error_filter.reset(0);		//滤波器复位
 		_flags.reset_accel_to_throttle = false;
 	}
 	else 
 	{
 		// calculate accel error and Filter with fc = 2 Hz
-		_accel_error.z = _accel_error_filter.apply(constrain_float(accel_target_z - z_accel_meas, -32000, 32000));
+		_accel_error.z = _accel_error_filter.apply(constrain_float(accel_target_z - z_accel_meas, -32000, 32000));	//计算加速度误差
 	}
 
 	// separately calculate p, i, d values for logging
-	p = _pid_alt_accel.get_p(_accel_error.z);
+	p = _pid_alt_accel.get_p(_accel_error.z);		//比例项
 
 	// get i term
-	i = _pid_alt_accel.get_integrator();
+	i = _pid_alt_accel.get_integrator();			//当前积分
 
 	// update i term as long as we haven't breached the limits or the I term will certainly reduce
 	// To-Do: should this be replaced with limits check from attitude_controller?
-	if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i > 0 && _accel_error.z < 0) || (i < 0 && _accel_error.z>0)) {
+	//积分项
+	if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i > 0 && _accel_error.z < 0) || (i < 0 && _accel_error.z>0)) 
+	{
 		i = _pid_alt_accel.get_i(_accel_error.z, dt);
 	}
 
 	// get d term
+	//微分项
 	d = _pid_alt_accel.get_d(_accel_error.z, dt);
 
 	// To-Do: pull min/max throttle from motors

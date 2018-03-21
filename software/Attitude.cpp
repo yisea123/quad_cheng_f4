@@ -43,11 +43,6 @@ float get_pilot_desired_yaw_rate(int16_t stick_angle)
 
 
 #define THROTTLE_IN_MIDDLE 500          // the throttle mid point
-#define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+g.throttle_deadzone)  // top of the deadband
-#define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-g.throttle_deadzone)  // bottom of the deadband
-
-
-
 int16_t get_pilot_desired_throttle(int16_t throttle_control)
 {
 	
@@ -78,6 +73,9 @@ int16_t get_pilot_desired_throttle(int16_t throttle_control)
 	return throttle_out;
 }
 
+
+#define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+g.throttle_deadzone)  // top of the deadband
+#define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-g.throttle_deadzone)  // bottom of the deadband
 int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 {
 	int16_t desired_rate = 0;
@@ -94,15 +92,18 @@ int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 	g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
 
 	// check throttle is above, below or in the deadband
-	if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
+	if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM)//中位以下
+	{		
 		// below the deadband
 		desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control - THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - g.throttle_deadzone);
 	}
-	else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) {
+	else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) 
+	{
 		// above the deadband
 		desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control - THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - g.throttle_deadzone);
 	}
-	else {
+	else
+	{
 		// must be in the deadband
 		desired_rate = 0;
 	}
@@ -143,7 +144,7 @@ int16_t get_throttle_pre_takeoff(int16_t throttle_control)
 	}
 
 	// check throttle is below top of deadband
-	if (throttle_control < THROTTLE_IN_DEADBAND_TOP) 
+	if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM)
 	{
 		throttle_out = g.throttle_min + ((float)(throttle_control - g.throttle_min))*((float)(get_non_takeoff_throttle() - g.throttle_min)) / ((float)(THROTTLE_IN_DEADBAND_TOP - g.throttle_min));
 	}

@@ -65,7 +65,7 @@ public:
 	void freeze_ff_xy() { _flags.freeze_ff_xy = true; }
 
 
-
+	void set_alt_max(float alt_cm) { _alt_max = fabs(alt_cm); }
 	void set_alt_target(float alt_cm) { _pos_target.z = alt_cm; }
 	float get_alt_target() { return _pos_target.z; }
 
@@ -73,6 +73,7 @@ public:
 	void set_accel_z(float accel_cmss);
 	void set_target_to_stopping_point_z();
 	void get_stopping_point_z(Vector3f & stopping_point) const;
+
 
 
 private:
@@ -118,12 +119,6 @@ private:
 // 	void pos_to_rate_xy(bool use_desired_rate, float dt);
 // 	void rate_to_accel_xy(float dt);
 // 	void accel_to_lean_angles();
-
-
-	
-
-
-
 
 
 	const AHRS& _ahrs;

@@ -28,6 +28,7 @@ private:
 // Typedef for convenience - add more as needed
 typedef Buffer<float, 5> BufferFloat_Size5;
 typedef Buffer<float, 15> BufferFloat_Size15;
+typedef Buffer<float, 8> BufferFloat_Size8;
 
 template <class T, uint8_t SIZE>
 Buffer<T, SIZE>::Buffer() :

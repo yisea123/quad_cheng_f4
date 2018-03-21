@@ -136,7 +136,7 @@
 #endif
 
 #ifndef THR_DZ_DEFAULT
-# define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
+# define THR_DZ_DEFAULT         50             // the deadzone above and below mid throttle while in althold or loiter
 #endif
 
 #ifndef ALT_HOLD_P

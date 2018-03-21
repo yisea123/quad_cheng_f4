@@ -1,4 +1,5 @@
 #include "InertialNav.h"
+#include "Ano_OF.h"
 
 
 void InertialNav::update_gains()
@@ -39,8 +40,8 @@ void InertialNav::update(float dt)
 		_flags.ignore_error--;
 	}
 
-	check_baro();	//update position_error.z
-
+	//check_baro();	//update position_error.z
+	check_sonar();
 	Vector3f accel_ef = _ahrs.get_accel_ef();
 	accel_ef.z += GRAVITY_MSS;	//除去重力加速度
 	accel_ef *= 100.0f;			//in cm/s2
@@ -118,49 +119,96 @@ void InertialNav::set_altitude(float new_altitude)
 	_postion.z = new_altitude; // _position = _position_base + _position_correction
 	_hist_position_estimate_z.clear();
 }
-void InertialNav::check_baro()
+// void InertialNav::check_baro()
+// {
+// 	uint32_t baro_update_time;
+// 	baro_update_time = _baro.get_last_update();
+// 	if(baro_update_time != _baro_last_update)
+// 	{
+// 		float dt = (float)(baro_update_time - _baro_last_update)*0.001f;	//in seconds
+// 		//
+// 		correct_with_baro(_baro.get_altitude()*100.0f, dt);
+// 		_baro_last_update = baro_update_time;
+// 
+// 	}
+// }
+
+void InertialNav::check_sonar()
 {
-	uint32_t baro_update_time;
-	baro_update_time = _baro.get_last_update();
-	if(baro_update_time != _baro_last_update)
+	uint32_t sonar_update_time;
+	sonar_update_time = ANO_OF.update_time;
+	if (sonar_update_time != _sonar_last_update)
 	{
-		float dt = (float)(baro_update_time - _baro_last_update)*0.001f;	//in seconds
-		//
-		correct_with_baro(_baro.get_altitude()*100.0f, dt);
-		_baro_last_update = baro_update_time;
+		float dt = (float)(sonar_update_time - _sonar_last_update)*0.001f;	//in seconds
+																			//
+		correct_with_sonar(ANO_OF.ALT2, dt);
+		_sonar_last_update = sonar_update_time;
 
 	}
 }
-void InertialNav::correct_with_baro(float baro_alt, float dt)
+// void InertialNav::correct_with_baro(float baro_alt, float dt)
+// {
+// 	static uint8_t first_read = 0;
+// 	if (dt > 0.5f)return;		//500ms时间太长
+// 
+// 	if(first_read <= 10){
+// 		set_altitude(baro_alt);		//用气压计高度初始化当前高度
+// 		first_read++;
+// 	}
+// 
+// 	//错误处理??	
+// 	if (_flags.baro_glitching)
+// 	{
+// 		set_altitude(baro_alt);
+// 		_postion_error = 0.0f;
+// 	}
+// 	else
+// 	{
+// 		float hist_position_base_z;
+// 		if(_hist_position_estimate_z.is_full())
+// 		{
+// 			hist_position_base_z = _hist_position_estimate_z.front();		//最早的一个,由于气压计测量滞后
+// 		}
+// 		else
+// 		{
+// 			hist_position_base_z = _postion_base.z;	//使用当前值
+// 		}
+// 
+// 		_postion_error = baro_alt - (hist_position_base_z + _postion_correction.z);
+// 	}
+// 
+// 
+// }
+
+void InertialNav::correct_with_sonar(float sonar_alt, float dt)
 {
 	static uint8_t first_read = 0;
 	if (dt > 0.5f)return;		//500ms时间太长
 
-	if(first_read <= 10){
-		set_altitude(baro_alt);		//用气压计高度初始化当前高度
+	if (first_read <= 10)
+	{
+		set_altitude(sonar_alt);		//用超声波高度初始化当前高度
 		first_read++;
 	}
 
 	//错误处理??	
-	if (_flags.baro_glitching)
+	if (_flags.sonar_glitchiing)
 	{
-		set_altitude(baro_alt);
+		set_altitude(sonar_alt);
 		_postion_error = 0.0f;
 	}
 	else
 	{
 		float hist_position_base_z;
-		if(_hist_position_estimate_z.is_full())
+		if (_hist_position_estimate_z.is_full())
 		{
-			hist_position_base_z = _hist_position_estimate_z.front();		//最早的一个,由于气压计测量滞后
+			hist_position_base_z = _hist_position_estimate_z.front();		//最早的一个,由于测量滞后
 		}
 		else
 		{
 			hist_position_base_z = _postion_base.z;	//使用当前值
 		}
 
-		_postion_error = baro_alt - (hist_position_base_z + _postion_correction.z);
+		_postion_error = sonar_alt - (hist_position_base_z + _postion_correction.z);
 	}
-
-
 }

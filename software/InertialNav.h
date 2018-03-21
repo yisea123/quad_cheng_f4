@@ -9,7 +9,7 @@
 
 
 #define INTERTIALNAV_TC_XY   2.5f // default time constant for complementary filter's X & Y axis
-#define INTERTIALNAV_TC_Z    5.0f // default time constant for complementary filter's Z axis
+#define INTERTIALNAV_TC_Z    1.5f // default time constant for complementary filter's Z axis
 
 // #defines to control how often historical accel based positions are saved
 // so they can later be compared to laggy gps readings
@@ -22,9 +22,9 @@
 class InertialNav
 {
 public:
-	InertialNav(AHRS &ahrs, Barometer &baro) :
+	InertialNav(AHRS &ahrs/*, Barometer &baro*/) :
 		_ahrs(ahrs),
-		_baro(baro),
+	//	_baro(baro),
 
 		_time_constant_xy(0),
 		_time_constant_z(INTERTIALNAV_TC_Z),
@@ -78,14 +78,17 @@ protected:
 	//void correct_with_gps(uint32_t now, int32_t lon, int32_t lat);
 	//void check_gps();
 
-	void check_baro();
+//	void check_baro();
+	void check_sonar();
 	/**
 	* correct_with_baro - calculates vertical position error using barometer.
 	*
 	* @param baro_alt : altitude in cm
 	* @param dt : time since last baro reading in s
 	*/
-	void correct_with_baro(float baro_alt, float dt);
+//	void correct_with_baro(float baro_alt, float dt);
+	void correct_with_sonar(float sonar_alt, float dt);
+
 	void update_gains();
 
 	//void set_postion_xy(float x, float y);
@@ -93,11 +96,12 @@ protected:
 	struct InertialNav_flags {
 		uint8_t gps_glitching : 1;                // 1 if glitch detector was previously indicating a gps glitch
 		uint8_t baro_glitching : 1;                // 1 if baro glitch detector was previously indicating a baro glitch
+		uint8_t sonar_glitchiing : 1;
 		uint8_t ignore_error : 3;                // the number of iterations for which we should ignore errors
 	} _flags;
 
 	AHRS &_ahrs;
-	Barometer &_baro;
+	//Barometer &_baro;
 
 
 	float _time_constant_xy;
@@ -119,7 +123,9 @@ protected:
 	float _k2_z;
 	float _k3_z;
 	uint32_t _baro_last_update;
-	BufferFloat_Size15 _hist_position_estimate_z;
+	uint32_t _sonar_last_update;
+
+	BufferFloat_Size5 _hist_position_estimate_z;
 
 	//	
 	Vector3f _postion_error;

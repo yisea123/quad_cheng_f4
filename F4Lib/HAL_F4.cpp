@@ -9,10 +9,11 @@ NVIC_InitTypeDef NVIC_InitStructureTable[] =
 /*NVIC_IRQChannel|PreemptionPriority|SubPriority|***Cmd*********/
 
 //=========USART====================================
-{USART1_IRQn,		1,					1,			ENABLE},
-{UART4_IRQn,		0,					1,			ENABLE},
-{UART5_IRQn,		1,					2,			ENABLE },
-{USART2_IRQn,		1,					2,			ENABLE },
+//{USART1_IRQn,		1,					1,			ENABLE},
+{UART4_IRQn,		0,					1,			ENABLE},		//sbus
+{UART5_IRQn,		1,					2,			ENABLE },		//数传
+//{ USART2_IRQn,		1,					2,			ENABLE },
+{ USART3_IRQn,		1,					2,			ENABLE },		//光流
 
 
 };
@@ -92,7 +93,8 @@ void HAL_F4::Setup()
 //=============================================================
 	console.begin(500000);		//调试
 	usart2.begin(115200);		//蓝牙?
-	usart3.begin(500000);		//
+	usart3.begin(500000);		//光流
+	uart4.begin_sbus();			//sbus
 	uart5.begin(500000);		//数传
 
 	//flash接口
@@ -106,7 +108,7 @@ void HAL_F4::Setup()
  	ParameterBase::Setup();
 
 	//for sbus
-	uart4.begin_sbus();
+	
 
 	//for ibus
 	//usart2.begin_ibus();
