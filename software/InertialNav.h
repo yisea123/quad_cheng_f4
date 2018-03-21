@@ -88,7 +88,7 @@ protected:
 	void correct_with_baro(float baro_alt, float dt);
 	void update_gains();
 
-	void set_postion_xy(float x, float y);
+	//void set_postion_xy(float x, float y);
 
 	struct InertialNav_flags {
 		uint8_t gps_glitching : 1;                // 1 if glitch detector was previously indicating a gps glitch

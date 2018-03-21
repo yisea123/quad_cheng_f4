@@ -23,7 +23,7 @@ static bool althold_init(bool ignore_checks)
 	//设置当前加速度?速度??
 	pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 	pos_control.set_accel_z(g.pilot_accel_z);
-	pos_control.set_target_to_stopping_point_z();
+	pos_control.set_target_to_stopping_point_z();		//将期望高度设置为当前高度
 
 	return true;
 

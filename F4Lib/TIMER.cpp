@@ -41,8 +41,8 @@ void TIMER::setup_timebase(uint16_t psc,uint16_t arr)
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
 	TIM_TimeBaseInitStructure.TIM_Prescaler = psc-1; 					//定时器分频
 	TIM_TimeBaseInitStructure.TIM_Period = arr-1; 						//自动重装载值
-	TIM_TimeBaseInitStructure.TIM_CounterMode=TIM_CounterMode_Up; 		//向上计数模式
-	TIM_TimeBaseInitStructure.TIM_ClockDivision=TIM_CKD_DIV1;
+	TIM_TimeBaseInitStructure.TIM_CounterMode= TIMER::CounterMode_Up; 		//向上计数模式
+	TIM_TimeBaseInitStructure.TIM_ClockDivision= TIMER::CKD_DIV1;
 	TIM_TimeBaseInit(_timx,&TIM_TimeBaseInitStructure);				//初始化定时器
 }
 
@@ -116,8 +116,8 @@ bool TIMER::_setup_pin_ch4()
 	return true;
 }
 
-void TIMER::setup_pwm1(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
-							uint16_t OutputNState, uint16_t NPolarity,uint16_t IdleState,uint16_t NIdleState)
+void TIMER::setup_pwm1(uint16_t Mode , uint16_t OutputState,uint16_t Polarity, uint16_t OutputNState,\
+							 uint16_t NPolarity,uint16_t IdleState,uint16_t NIdleState)
 {
 
 
@@ -125,7 +125,7 @@ void TIMER::setup_pwm1(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
 	
 	TIM_OCInitTypeDef TIM_OCInitStructure;
 	TIM_OCInitStructure.TIM_OCMode = Mode; 				//PWM 调制模式 1
-	TIM_OCInitStructure.TIM_OutputState = OutputState; 	//比较输出使能
+	TIM_OCInitStructure.TIM_OutputState = TIMER::OutputState_Enable; 	//比较输出使能
 	TIM_OCInitStructure.TIM_Pulse = 0; 					//初始比较值
 	TIM_OCInitStructure.TIM_OCPolarity = Polarity; 		//输出极性
 	
@@ -142,9 +142,7 @@ void TIMER::setup_pwm1(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
 	TIM_ARRPreloadConfig(_timx, ENABLE);
 }
 
-
-
-void TIMER::setup_pwm2(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
+void TIMER::setup_pwm2(uint16_t Mode , uint16_t OutputState, uint16_t Polarity,\
 							uint16_t OutputNState, uint16_t NPolarity,uint16_t IdleState,uint16_t NIdleState)
 {
 
@@ -152,7 +150,7 @@ void TIMER::setup_pwm2(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
 	
 	TIM_OCInitTypeDef TIM_OCInitStructure;
 	TIM_OCInitStructure.TIM_OCMode = Mode; 				//PWM 调制模式 1
-	TIM_OCInitStructure.TIM_OutputState = OutputState; 	//比较输出使能
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; 	//比较输出使能
 	TIM_OCInitStructure.TIM_Pulse = 0; 					//初始比较值
 	TIM_OCInitStructure.TIM_OCPolarity = Polarity; 		//输出极性
 	
@@ -169,7 +167,7 @@ void TIMER::setup_pwm2(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
 }
 
 
-void TIMER::setup_pwm3(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
+void TIMER::setup_pwm3(uint16_t Mode,uint16_t OutputState, uint16_t Polarity,\
 							uint16_t OutputNState, uint16_t NPolarity,uint16_t IdleState,uint16_t NIdleState)
 {
 
@@ -177,7 +175,7 @@ void TIMER::setup_pwm3(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
 	
 	TIM_OCInitTypeDef TIM_OCInitStructure;
 	TIM_OCInitStructure.TIM_OCMode = Mode; 				//PWM 调制模式 1
-	TIM_OCInitStructure.TIM_OutputState = OutputState; 	//比较输出使能
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; 	//比较输出使能
 	TIM_OCInitStructure.TIM_Pulse = 0; 					//初始比较值
 	TIM_OCInitStructure.TIM_OCPolarity = Polarity; 		//输出极性
 	
@@ -194,15 +192,15 @@ void TIMER::setup_pwm3(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
 }
 
 
-void TIMER::setup_pwm4(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
+void TIMER::setup_pwm4(uint16_t Mode, uint16_t OutputState, uint16_t Polarity,\
 							uint16_t OutputNState, uint16_t NPolarity,uint16_t IdleState,uint16_t NIdleState)
 {
-	
+
 	if(!_setup_pin_ch4())return;
 	
 	TIM_OCInitTypeDef TIM_OCInitStructure;
 	TIM_OCInitStructure.TIM_OCMode = Mode; 				//PWM 调制模式 1
-	TIM_OCInitStructure.TIM_OutputState = OutputState; 	//比较输出使能
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; 	//比较输出使能
 	TIM_OCInitStructure.TIM_Pulse = 0; 					//初始比较值
 	TIM_OCInitStructure.TIM_OCPolarity = Polarity; 		//输出极性
 	
@@ -221,7 +219,6 @@ void TIMER::setup_pwm4(uint16_t Mode,uint16_t OutputState,uint16_t Polarity,\
 
 
 
-
 void TIMER::setup_capture1(uint16_t Polarity,uint16_t Selection,uint16_t Prescale,uint16_t Filter)
 {
 	if(!_setup_pin_ch1())return;
@@ -234,7 +231,7 @@ void TIMER::setup_capture1(uint16_t Polarity,uint16_t Selection,uint16_t Prescal
 	TIM_ICInitStructure.TIM_ICFilter = Filter;							//IC1F=0000 配置输入滤波器 不滤波
 	TIM_ICInit(_timx, &TIM_ICInitStructure); 							//初始化 TIM5 输入捕获参数
 	
-	TIM_ITConfig(_timx,TIM_IT_Update|TIM_IT_CC1,ENABLE);					//允许更新和捕获中断
+	TIM_ITConfig(_timx, TIMER::IT_Update| TIMER::IT_CC1,ENABLE);					//允许更新和捕获中断
 }	
 
 
@@ -250,7 +247,7 @@ void TIMER::setup_capture2(uint16_t Polarity,uint16_t Selection,uint16_t Prescal
 	TIM_ICInitStructure.TIM_ICFilter = Filter;							//IC1F=0000 配置输入滤波器 不滤波
 	TIM_ICInit(_timx, &TIM_ICInitStructure); 							//初始化 TIM5 输入捕获参数
 	
-	TIM_ITConfig(_timx,TIM_IT_Update|TIM_IT_CC2,ENABLE);					//允许更新和捕获中断
+	TIM_ITConfig(_timx, TIMER::IT_Update| TIMER::IT_CC2,ENABLE);					//允许更新和捕获中断
 }	
 
 
@@ -266,7 +263,7 @@ void TIMER::setup_capture3(uint16_t Polarity,uint16_t Selection,uint16_t Prescal
 	TIM_ICInitStructure.TIM_ICFilter = Filter;							//IC1F=0000 配置输入滤波器 不滤波
 	TIM_ICInit(_timx, &TIM_ICInitStructure); 							//初始化 TIM5 输入捕获参数
 	
-	TIM_ITConfig(_timx,TIM_IT_Update|TIM_IT_CC3,ENABLE);					//允许更新和捕获中断
+	TIM_ITConfig(_timx,TIMER::IT_Update| TIMER::IT_CC3,ENABLE);					//允许更新和捕获中断
 }	
 
 
@@ -282,7 +279,7 @@ void TIMER::setup_capture4(uint16_t Polarity,uint16_t Selection,uint16_t Prescal
 	TIM_ICInitStructure.TIM_ICFilter = Filter;							//IC1F=0000 配置输入滤波器 不滤波
 	TIM_ICInit(_timx, &TIM_ICInitStructure); 							//初始化 TIM5 输入捕获参数
 	
-	TIM_ITConfig(_timx,TIM_IT_Update|TIM_IT_CC4,ENABLE);					//允许更新和捕获中断
+	TIM_ITConfig(_timx, TIMER::IT_Update| TIMER::IT_CC4,ENABLE);					//允许更新和捕获中断
 }	
 
 

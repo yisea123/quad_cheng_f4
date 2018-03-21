@@ -8,6 +8,15 @@ extern Parameters g;
 
 
 
+void AttitudeControl::set_dt(float delta_sec)
+{
+	_dt = delta_sec;
+	_pid_rate_roll.set_d_lpf_alpha(20, _dt);
+	_pid_rate_pitch.set_d_lpf_alpha(20, _dt);
+	_pid_rate_yaw.set_d_lpf_alpha(20, _dt);
+
+}
+
 void AttitudeControl::relax_bf_rate_controller()
 {
 	_rate_bf_target = _ahrs.get_gyro()*ATTITUDE_CONTROL_DEGX100;

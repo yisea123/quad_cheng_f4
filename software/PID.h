@@ -12,8 +12,7 @@ public:
 	PID(float initial_p = 0.0f,
 		float initial_i = 0.0f,
 		float initial_d = 0.0f,
-		int16_t initial_imax = 0):
-		_d_lpf_alpha()
+		int16_t initial_imax = 0)
 	{
 		_kp = initial_p;
 		_ki = initial_i;

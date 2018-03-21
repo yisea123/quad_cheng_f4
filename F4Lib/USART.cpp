@@ -51,6 +51,31 @@ void USART::begin(uint32_t baudrate)
 	USART_Cmd(_usartx, ENABLE); 						//使能串口	
 	add_interrupt(USART::IT_RXNE);						//接收中断使能
 }
+void USART::begin_sbus()
+{
+	set_baudrate(100000);
+	set_wordlength(USART::WordLength_9b);
+	set_stopbits(USART::StopBits_2);
+	set_parity(USART::Parity_Even);
+	set_mode(USART::Mode_Rx);
+	set_hardwareflow_control(USART::HardwareFlowControl_None);
+	open();
+	add_interrupt(USART::IT_RXNE);
+	add_interrupt(USART::IT_IDLE);
+}
+
+void USART::begin_ibus()
+{
+	set_baudrate(115200);
+	set_wordlength(USART::WordLength_9b);
+	set_stopbits(USART::StopBits_2);
+	set_parity(USART::Parity_Even);
+	set_mode(USART::Mode_Rx);
+	set_hardwareflow_control(USART::HardwareFlowControl_None);
+	open();
+	add_interrupt(USART::IT_RXNE);
+	add_interrupt(USART::IT_IDLE);
+}
 void USART::open()
 {
 	USART_Init(_usartx, &_USART_InitStructure); 		//USART设置

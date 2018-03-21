@@ -39,8 +39,8 @@ bool InertialSensor::calibration_accel(void)
 		//清除,下次得到原始数据
 		_accel_scale.one();
 		_accel_offset.zero();
-		accel_sum.zero();
 
+		accel_sum.zero();
 		accel_sum_count = 0;
 		
 	}
@@ -74,13 +74,12 @@ bool InertialSensor::calibration_gyro(void)
 	if (gyro_sum_count == -1)
 	{
 		//清除,下次得到原始数据
-		_gyro_scale.one();	//清除,下次得到原始数据
+		_gyro_scale.one();	
 		_gyro_offset.zero();
-		gyro_sum.zero();
 
+		gyro_sum.zero();
 		gyro_sum_count = 0;
-		
-		
+
 	}
 	else
 	{

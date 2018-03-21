@@ -106,29 +106,10 @@ void HAL_F4::Setup()
  	ParameterBase::Setup();
 
 	//for sbus
-	uart4.set_baudrate(100000);
-	uart4.set_wordlength(USART::WordLength_9b);
-	uart4.set_stopbits(USART::StopBits_2);
-	uart4.set_parity(USART::Parity_Even);
-	uart4.set_mode(USART::Mode_Rx);
-	uart4.set_hardwareflow_control(USART::HardwareFlowControl_None);
-	uart4.open();
-	uart4.add_interrupt(USART::IT_RXNE);
-	uart4.add_interrupt(USART::IT_IDLE);
+	uart4.begin_sbus();
 
 	//for ibus
-// 	usart2.set_baudrate(115200);
-// 	usart2.set_wordlength(USART::WordLength_9b);
-// 	usart2.set_stopbits(USART::StopBits_2);
-// 	usart2.set_parity(USART::Parity_Even);
-// 	usart2.set_mode(USART::Mode_Rx);
-// 	usart2.set_hardwareflow_control(USART::HardwareFlowControl_None);
-// 	usart2.open();
-// 	usart2.add_interrupt(USART::IT_RXNE);
-// 	usart2.add_interrupt(USART::IT_IDLE);
-
-
-
+	//usart2.begin_ibus();
 }
 
 void HAL_F4::pwm_write(uint8_t idx, uint16_t pwm)
@@ -164,11 +145,6 @@ void HAL_F4::pwm_write(uint8_t idx, uint16_t pwm)
 
 	}
 }
-
-
-
-
-
 
 
 //====================================================

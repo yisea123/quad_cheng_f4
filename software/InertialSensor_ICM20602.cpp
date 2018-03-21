@@ -165,8 +165,10 @@ bool InertialSensor_ICM20602::_init_sensor(void)
 
 	_product_id = _read_reg(ICM20_WHO_AM_I);
 	//printf("icm_20602 id=%x\r\n", _product_id);
+
 	if (_product_id != 0x12)
 	{
+		hal.scheduler.resume_timer_procs();
 		return false;
 	}
 
@@ -191,8 +193,8 @@ void InertialSensor_ICM20602::init(void)
 
 	_init_sensor();
 	check_calibration();
-	//Notify::flags.initialising = true;	//ins初始化，保持静止
 
+	//Notify::flags.initialising = true;	//ins初始化，保持静止
 // 	printf("gyro_offset:x=%f,y=%f,z=%f\r\n", _gyro_offset.x, _gyro_offset.y, _gyro_offset.z);
 // 	printf("accel_ofset:x=%f,y=%f,z=%f\r\n", _accel_offset.x, _accel_offset.y, _accel_offset.z);
 
@@ -211,7 +213,8 @@ void InertialSensor_ICM20602::_poll_data(void)
 
 	_accel_raw.x = int16_val(buf, 1);
 	_accel_raw.y = int16_val(buf, 0);
-	_accel_raw.z = -int16_val(buf, 2);
+	//TODO向下运动为正???,测得重力大小为负????
+	_accel_raw.z = -int16_val(buf, 2);		
 
 	_gyro_raw.x = int16_val(buf, 5);
 	_gyro_raw.y = int16_val(buf, 4);

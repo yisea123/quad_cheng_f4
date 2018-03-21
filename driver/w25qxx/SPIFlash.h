@@ -3,7 +3,7 @@
 
 
 #include "HAL_F4.h"
-
+#include "FlashClass.h"
 
 #define W25X40  0XEF12	
 #define W25Q80 	0XEF13 	
@@ -19,7 +19,7 @@
 
 
 
-class SPIFlash
+class SPIFlash:public FlashClass
 {
 public:
 	SPIFlash(SPIDriver& spi,GPIO cs):_spi(spi),_cs(cs){};
@@ -28,26 +28,26 @@ public:
 	uint8_t status();
 	void status(uint8_t sta);
 		
-	void write_enable();
-	void write_disable();
+	virtual void write_enable();
+	virtual void write_disable();
 	
 	void init();	
 	bool is_ready(){return !((status()&0x01)==0x01); }  
 	void wait_busy(){while((status()&0x01)==0x01); }
 
-	void erase_chip();
-	void erase_sector(uint32_t sec_index);		//每个扇区4K
+	virtual void erase_chip();
+	virtual void erase_sector(uint32_t sec_index);		//每个扇区4K
 	
-	void write_page(uint32_t address,void *buf,uint16_t len);		//一页256字节
+	void write_page(uint32_t address,void *buf, uint32_t len);		//一页256字节
 	void write_nocheck(uint32_t address,void *buf,uint32_t len);	
-	uint16_t write_sector(uint32_t address,void *buf,uint16_t len); //在一个扇区内读写,超过时自动阶段
+ 	virtual uint32_t write_sector(uint32_t address,void *buf, uint32_t len); //在一个扇区内读写,超过时自动阶段
 	
 	//void write(uint32_t address,const void *buf,uint32_t len) ;
 	
-	void read(uint32_t address,void *buf,uint32_t len) ;
+	virtual void read(uint32_t address,void *buf,uint32_t len) ;
 	
 	
-	uint16_t sector_size()const	{		return _sector_size;	}
+	virtual uint32_t sector_size()const	{		return _sector_size;	}
 	uint32_t flash_size()const	{		return _flash_size;		}
 	uint16_t id()const			{		return _id;				}
 	

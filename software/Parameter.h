@@ -39,7 +39,6 @@ public:
 	void save() { _save_all = true; }
 	static bool SaveRequeset() { return _save_all; }
 
-	//virtual uint8_t get_size() = 0;
 protected:
 	//子类需要实现这两个方法
 	virtual uint8_t param_size()const = 0;
@@ -51,7 +50,7 @@ private:
 
 	static bool _save_all;
 //	bool _save;
-	uint32_t _offset;	//在flash中的偏移地址，用于读取定位
+//	uint32_t _offset;	//在flash中的偏移地址，用于读取定位
 };
 
 /*************************************************************************/

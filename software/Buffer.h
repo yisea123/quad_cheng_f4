@@ -50,7 +50,8 @@ void Buffer<T, SIZE>::push_back(const T & item)
 	_buff[tail] = item;
 
 	if (_num_items < SIZE) _num_items++;
-	else{
+	else
+	{
 		_head++;
 		if (_head >= SIZE) _head = 0;
 	}

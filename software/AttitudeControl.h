@@ -56,7 +56,7 @@ public:
 		
 	}
 		
-
+	void set_dt(float delta_sec);
 	int16_t angle_boost() const { return _angle_boost; }
 
 	void relax_bf_rate_controller();
@@ -103,6 +103,7 @@ protected:
 	Param_Float _accel_y_max;
 
 	//
+	float _dt;
 	//Vector3f _angle_ef_target;		//期望角度ef
 	Vector3f _angle_bf_error;		//期望角度bf
 	//Vector3f _rate_bf_target;		//期望角速率bf

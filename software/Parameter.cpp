@@ -63,8 +63,6 @@ ParameterBase::ParameterBase()
 
 	ParametersNum++;
 }
-
-
 ParameterBase* ParameterBase::GetAddress(uint16_t index)
 {
 	if (index >= ParametersNum)
@@ -76,13 +74,11 @@ ParameterBase* ParameterBase::GetAddress(uint16_t index)
 		return ParametersAddress[index];
 	}
 }
-
 uint16_t ParameterBase::Count()
 {
 	return ParametersNum;
 }
-//占用总内存大小
-uint32_t ParameterBase::Size()
+uint32_t ParameterBase::Size()	//占用总内存大小
 {
 	uint32_t total_size = sizeof(ParamHeader);
 
@@ -118,9 +114,6 @@ void param_memory_error(uint8_t type)
 	
 	while (1);
 }
-
-
-
 void ParameterBase::Setup()
 {
 
@@ -167,15 +160,14 @@ void ParameterBase::Setup()
 	ph->version = PARAMETER_VER;
 	ph->sub_version = PARAMETER_SUB_VER;
 	
-
-
+	_save_all = true;
 	ParameterBase::SaveAll();
 	param_debug("param finish....!\r\n");
 }
-
-
 void ParameterBase::SaveAll()
 {
+	if (!_save_all)return;
+
 	spiflash.erase_sector(PARAM_FLASH_ADDR_BASE/spiflash.sector_size());
 
 	uint8_t *pparam = ParameterBuffer + sizeof(ParamHeader);

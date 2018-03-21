@@ -3,27 +3,6 @@
 
 #include "sys.h"
 
-
-
-
-GPIO_TypeDef* const GPIO_PORTS[] = {GPIOA,GPIOB,GPIOC,GPIOD,GPIOE,GPIOF,GPIOG,GPIOH,GPIOI,GPIOJ,GPIOK};
-
-const uint16_t  GPIO_PINS[]= {
-GPIO_Pin_0,	GPIO_Pin_1,	GPIO_Pin_2,		GPIO_Pin_3,		GPIO_Pin_4,		GPIO_Pin_5,		GPIO_Pin_6,		GPIO_Pin_7,
-GPIO_Pin_8,	GPIO_Pin_9,	GPIO_Pin_10,	GPIO_Pin_11,	GPIO_Pin_12,	GPIO_Pin_13,	GPIO_Pin_14,	GPIO_Pin_15};
-
-const uint16_t  GPIO_PINS_SOURCE[]= {
-GPIO_PinSource0,	GPIO_PinSource1,	GPIO_PinSource2,	GPIO_PinSource3,	GPIO_PinSource4,	GPIO_PinSource5,	GPIO_PinSource6,	GPIO_PinSource7,
-GPIO_PinSource8,	GPIO_PinSource9,	GPIO_PinSource10,	GPIO_PinSource11,	GPIO_PinSource12,	GPIO_PinSource13,	GPIO_PinSource14,	GPIO_PinSource15};
-
-const uint32_t  GPIO_PINS_CLOCK[]= {
-RCC_AHB1Periph_GPIOA,RCC_AHB1Periph_GPIOB,RCC_AHB1Periph_GPIOC,
-RCC_AHB1Periph_GPIOD,RCC_AHB1Periph_GPIOE,RCC_AHB1Periph_GPIOF,
-RCC_AHB1Periph_GPIOG,RCC_AHB1Periph_GPIOH,RCC_AHB1Periph_GPIOI,
-RCC_AHB1Periph_GPIOJ,RCC_AHB1Periph_GPIOK
-};
-		
-
 typedef enum
 {
 	PA0,PA1,PA2,PA3,PA4,PA5,PA6,PA7,PA8,PA9,PA10,PA11,PA12,PA13,PA14,PA15,//PAx
@@ -48,26 +27,15 @@ public:
 	GPIO(GPIO_PIN_T pin);
 	GPIO(GPIO_TypeDef* GPIOx,uint32_t GPIO_Pin):
 		_port(GPIOx),_pin(GPIO_Pin){};
-		
+
 	
 	//设置为输入模式
 	void mode_in(GPIOPuPd_TypeDef pupd		= 	GPIO_PuPd_UP,				//上拉
-					GPIOSpeed_TypeDef speed = 	GPIO_Speed_100MHz)const;
+					GPIOSpeed_TypeDef speed = 	GPIO_Speed_100MHz);
 	
 	//设置为输出模式
 	void mode_out(GPIOOType_TypeDef	otype 	=	GPIO_OType_PP,				//推挽输出
-					GPIOSpeed_TypeDef speed = 	GPIO_Speed_100MHz)const;
-	
-	//设置为外设模式
-//	void mode_af(uint8_t GPIO_AF,
-//					GPIOOType_TypeDef	otype 	=	GPIO_OType_PP,			//推挽输出
-//					GPIOPuPd_TypeDef pupd		= 	GPIO_PuPd_UP,			//上拉
-//					GPIOSpeed_TypeDef speed = 	GPIO_Speed_100MHz)const;
-	
-	
-	//设置为模拟模式
-//	void mode_adc(GPIOPuPd_TypeDef pupd		= 	GPIO_PuPd_NOPULL,			
-//					GPIOSpeed_TypeDef speed = 	GPIO_Speed_100MHz)const;
+					GPIOSpeed_TypeDef speed = 	GPIO_Speed_100MHz);
 	
 		
 	static void ModeAF(GPIO_PIN_T pin,uint8_t GPIO_AF,
@@ -82,21 +50,20 @@ public:
 		else			GPIO_ResetBits(_port,_pin);
 	}
 	
-	//读取输出
+	//读取
 	operator uint8_t() const
 	{
-		return GPIO_ReadOutputDataBit(_port,_pin);
-	}
-	//读取输入
-	uint8_t read()const
-	{
-		return GPIO_ReadInputDataBit(_port,_pin);
+		if(_mode_out)
+			return GPIO_ReadOutputDataBit(_port,_pin);
+		else
+			return GPIO_ReadInputDataBit(_port, _pin);
 	}
 	
 	
 private:
 	GPIO_TypeDef* const _port;
 	const uint32_t 	 _pin;
+	bool _mode_out;
 
 	 //禁止取地址
 	GPIO* operator&() { return this;};

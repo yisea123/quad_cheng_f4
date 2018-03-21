@@ -34,13 +34,12 @@ void InertialNav::update(float dt)
 {
 	if (dt > 0.1f)return;	//大于100ms
 
+
 	if (_flags.ignore_error > 0){
 		_flags.ignore_error--;
 	}
 
 	check_baro();	//update position_error.z
-
-
 
 	Vector3f accel_ef = _ahrs.get_accel_ef();
 	accel_ef.z += GRAVITY_MSS;	//除去重力加速度
@@ -56,7 +55,6 @@ void InertialNav::update(float dt)
 	accel_ef.z = -accel_ef.z;	//向上为正
 
 //////////////////////////////////////////////////////////////////////////
-	//获取水平位置误差
 	Vector2f position_error_hbf;
 	Vector3f accel_correction_ef;
 
@@ -68,12 +66,13 @@ void InertialNav::update(float dt)
 	float tmp = _k3_xy * dt;
 	accel_correction_hbf.x += position_error_hbf.x * tmp;
 	accel_correction_hbf.y += position_error_hbf.y * tmp;
+	accel_correction_hbf.z += _postion_error.z * _k3_z * dt;
 
 	//加速度矫正再转回速度坐标系
 	accel_correction_ef.x = accel_correction_hbf.x * _ahrs.cos_yaw() - accel_correction_hbf.y * _ahrs.sin_yaw();
 	accel_correction_ef.y = accel_correction_hbf.x * _ahrs.sin_yaw() + accel_correction_hbf.y * _ahrs.cos_yaw();
+	accel_correction_ef.z = accel_correction_hbf.z;
 
-	accel_correction_ef.z += _postion_error.z * _k3_z * dt;
 
 	//速度修正
 	tmp = _k2_xy*dt;
@@ -88,8 +87,7 @@ void InertialNav::update(float dt)
 	_postion_correction.z += _postion_error.z * _k1_z * dt;
 
 	//加速度积分
-	Vector3f velocity_increase;
-	velocity_increase = (accel_ef + accel_correction_ef)*dt;
+	Vector3f velocity_increase = (accel_ef + accel_correction_ef)*dt;
 	//更新位置
 	_postion_base += (_velocity + velocity_increase*0.5f)*dt;
 	_postion = _postion_base + _postion_correction;
@@ -124,7 +122,8 @@ void InertialNav::check_baro()
 {
 	uint32_t baro_update_time;
 	baro_update_time = _baro.get_last_update();
-	if(baro_update_time != _baro_last_update){
+	if(baro_update_time != _baro_last_update)
+	{
 		float dt = (float)(baro_update_time - _baro_last_update)*0.001f;	//in seconds
 		//
 		correct_with_baro(_baro.get_altitude()*100.0f, dt);
@@ -143,7 +142,8 @@ void InertialNav::correct_with_baro(float baro_alt, float dt)
 	}
 
 	//错误处理??	
-	if (_flags.baro_glitching) {
+	if (_flags.baro_glitching)
+	{
 		set_altitude(baro_alt);
 		_postion_error = 0.0f;
 	}
@@ -152,10 +152,11 @@ void InertialNav::correct_with_baro(float baro_alt, float dt)
 		float hist_position_base_z;
 		if(_hist_position_estimate_z.is_full())
 		{
-			hist_position_base_z = _hist_position_estimate_z.front();
+			hist_position_base_z = _hist_position_estimate_z.front();		//最早的一个,由于气压计测量滞后
 		}
-		else{
-			hist_position_base_z = _postion_base.z;
+		else
+		{
+			hist_position_base_z = _postion_base.z;	//使用当前值
 		}
 
 		_postion_error = baro_alt - (hist_position_base_z + _postion_correction.z);

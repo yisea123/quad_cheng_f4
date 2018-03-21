@@ -129,7 +129,6 @@ bool Barometer_SPL06::_init_sensor(void)
 {
 	uint8_t coef[18];
 	_cs_pin.mode_out();
-
 	_healthy = false;
 	hal.scheduler.suspend_timer_procs();
 
@@ -262,16 +261,17 @@ void Barometer_SPL06::update(void)
 		{
 			_prs_sum += prs;
 			_prs_count++;
-			if (_prs_count == 128) {
+			if (_prs_count == 128) 
+			{
 				_prs_sum /= 2;
 				_prs_count = 64;
 			}
-
 			_updated = true;
 		}
 
 		_state++;
-		if (_state == 5) {
+		if (_state == 5) 
+		{
 			start_T();
 			_state = 0;
 		}

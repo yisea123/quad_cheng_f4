@@ -79,7 +79,6 @@ uint8_t SPIFlash::status()
 	
 	return sta;
 }
-
 void SPIFlash::status(uint8_t sta)
 {
 	_cs = 0;                       //使能器件   
@@ -95,9 +94,6 @@ void SPIFlash::write_enable()
     _spi.write(W25X_WriteEnable);      	//发送写使能  
 	_cs = 1;                          //取消片选  
 } 
-
-
-
 void SPIFlash::write_disable()
 {
 	_cs = 0;                          //使能器件   
@@ -108,7 +104,7 @@ void SPIFlash::write_disable()
 
 
 //len:要写入的字节数(最大256),该数不应该超过该页的剩余字节数!!!
-void SPIFlash::write_page(uint32_t address,void *buf,uint16_t len)
+void SPIFlash::write_page(uint32_t address,void *buf, uint32_t len)
 {
 	write_enable();
 	_cs = 0; 
@@ -120,9 +116,6 @@ void SPIFlash::write_page(uint32_t address,void *buf,uint16_t len)
 	_cs = 1;
 	wait_busy();
 }
-
-
-
 void SPIFlash::write_nocheck(uint32_t address,void *buf,uint32_t len)
 { 			 		 
 	uint16_t pageremain;	
@@ -152,7 +145,7 @@ void SPIFlash::write_nocheck(uint32_t address,void *buf,uint32_t len)
 
 
 //在setor内写，超过时截断
-uint16_t SPIFlash::write_sector(uint32_t address,void *buf,uint16_t len)
+uint32_t SPIFlash::write_sector(uint32_t address,void *buf, uint32_t len)
 {
 	uint16_t secremain;	      
 	secremain = sector_size() - address%sector_size();	//扇区剩余空间大小
@@ -226,7 +219,6 @@ void SPIFlash::erase_chip()
 	wait_busy();
 	
 }
-
 //擦除一个山区的最少时间:150ms
 void SPIFlash::erase_sector(uint32_t sec_index)
 {
@@ -242,8 +234,6 @@ void SPIFlash::erase_sector(uint32_t sec_index)
 	wait_busy();
 
 }
-
-
 void SPIFlash::read(uint32_t address,void *buf,uint32_t len)
 {   		
 	_cs = 0;                           //使能器件   
@@ -254,8 +244,6 @@ void SPIFlash::read(uint32_t address,void *buf,uint32_t len)
 	_spi.read((uint8_t*)buf,len);
 	_cs = 1;
 }
-
-
 
 
 SPIFlash spiflash(hal.spi1,PB1);

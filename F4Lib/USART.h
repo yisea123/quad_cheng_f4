@@ -116,6 +116,8 @@ public:
 
 
 	void begin(uint32_t baudrate);		//打开普通串口
+	void begin_sbus();
+	void begin_ibus();
 	void open();
 	void close();
 

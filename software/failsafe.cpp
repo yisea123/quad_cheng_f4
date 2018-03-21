@@ -42,6 +42,10 @@ void set_throttle_failsafe(uint16_t throttle_pwm)
 {
 	if (g.failsafe_throttle == FS_THR_DISABLED)		////禁止油门保护,直接设置
 	{
+		if (failsafe.radio)	{
+			failsafe_set_radio(false);
+		}
+
 		return;
 	}
 
@@ -60,7 +64,7 @@ void set_throttle_failsafe(uint16_t throttle_pwm)
 			failsafe_set_radio(true);
 		}
 	}
-	else if (failsafe.radio_counter)
+	else if (failsafe.radio_counter || failsafe.radio)
 	{		//油门正常,减小失控保护记录
 			// we have a good throttle so reduce failsafe counter
 		failsafe.radio_counter--;
